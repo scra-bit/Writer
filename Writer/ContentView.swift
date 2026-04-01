@@ -2,58 +2,40 @@
 //  ContentView.swift
 //  Writer
 //
-//  Created by Emmett on 3/28/26.
-//
 
 import SwiftUI
-import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @Binding var document: TextDocument
+    @State private var showPreview = true
+    @Environment(ThemeStore.self) private var themeStore
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
+        Group {
+            if showPreview {
+                HSplitView {
+                    editorView
+                        .frame(minWidth: 200)
+                    WebView(markdown: document.text, theme: themeStore.previewTheme)
+                        .frame(minWidth: 200)
                 }
-                .onDelete(perform: deleteItems)
+            } else {
+                editorView
             }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200)
-            .toolbar {
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button(action: { showPreview.toggle() }) {
+                    Image(systemName: showPreview ? "sidebar.left" : "sidebar.right")
                 }
-            }
-        } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+                .help(showPreview ? "Hide Preview" : "Show Preview")
             }
         }
     }
-}
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+    private var editorView: some View {
+        TextEditor(text: $document.text)
+            .font(.system(.body, design: .monospaced))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
 }

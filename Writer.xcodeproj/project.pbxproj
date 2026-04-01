@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A08106EC2F7872B800019350 /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = A08106EB2F7872B800019350 /* Textual */; };
+		A08106FF2F788CEE00019350 /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = A08106FE2F788CEE00019350 /* Markdown */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		A021E5E62F785A66008CF299 /* Writer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Writer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +41,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A08106EC2F7872B800019350 /* Textual in Frameworks */,
+				A08106FF2F788CEE00019350 /* Markdown in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +85,8 @@
 			);
 			name = Writer;
 			packageProductDependencies = (
+				A08106EB2F7872B800019350 /* Textual */,
+				A08106FE2F788CEE00019350 /* Markdown */,
 			);
 			productName = Writer;
 			productReference = A021E5E62F785A66008CF299 /* Writer.app */;
@@ -107,6 +116,10 @@
 			);
 			mainGroup = A021E5DD2F785A66008CF299;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A08106EA2F7872B800019350 /* XCRemoteSwiftPackageReference "textual" */,
+				A08106FD2F788CEE00019350 /* XCRemoteSwiftPackageReference "swift-markdown" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A021E5E72F785A66008CF299 /* Products */;
 			projectDirPath = "";
@@ -143,6 +156,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Writer/Writer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -176,6 +190,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Writer/Writer.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -346,6 +361,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A08106EA2F7872B800019350 /* XCRemoteSwiftPackageReference "textual" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/textual";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.3.1;
+			};
+		};
+		A08106FD2F788CEE00019350 /* XCRemoteSwiftPackageReference "swift-markdown" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-markdown";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.7.3;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A08106EB2F7872B800019350 /* Textual */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A08106EA2F7872B800019350 /* XCRemoteSwiftPackageReference "textual" */;
+			productName = Textual;
+		};
+		A08106FE2F788CEE00019350 /* Markdown */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A08106FD2F788CEE00019350 /* XCRemoteSwiftPackageReference "swift-markdown" */;
+			productName = Markdown;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A021E5DE2F785A66008CF299 /* Project object */;
 }
