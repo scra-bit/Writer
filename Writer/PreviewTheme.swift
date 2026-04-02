@@ -81,8 +81,8 @@ extension PreviewTheme {
             font-weight: 600;
             line-height: 1.25;
         }
-        h1 { font-size: 2em; border-bottom: 1px solid \(borderColor); padding-bottom: 0.3em; }
-        h2 { font-size: 1.5em; border-bottom: 1px solid \(borderColor); padding-bottom: 0.3em; }
+        h1 { font-size: 2em; padding-bottom: 0.3em; }
+        h2 { font-size: 1.5em; padding-bottom: 0.3em; }
         h3 { font-size: 1.25em; }
         h4 { font-size: 1em; }
         h5 { font-size: 0.875em; }
