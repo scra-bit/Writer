@@ -51,6 +51,20 @@ extension PreviewTheme {
         borderColor: "#e1e4e8",
         secondaryTextColor: "#6a737d"
     )
+    static let lightTheme = PreviewTheme(
+        name: "Light",
+        bodyFontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        headingFontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        codeFontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+        baseFontSize: 16,
+        lineHeight: 1.6,
+        backgroundColor: "#ffffff",
+        textColor: "#262626", // neutral-800 equivalent
+        linkColor: "#0366d6", // blue-600
+        codeBackgroundColor: "#fafafa", // neutral-50 equivalent
+        borderColor: "#e5e5e5", // neutral-200 equivalent
+        secondaryTextColor: "#525252" // neutral-600 equivalent
+    )
 
     // All available themes
     static let allThemes: [PreviewTheme] = [.sansSerif, .serif]
