@@ -67,7 +67,7 @@ extension PreviewTheme {
     )
 
     // All available themes
-    static let allThemes: [PreviewTheme] = [.sansSerif, .serif]
+    static let allThemes: [PreviewTheme] = [.sansSerif, .serif, .lightTheme]
 }
 
 extension PreviewTheme {

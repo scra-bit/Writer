@@ -6,22 +6,34 @@
 import SwiftUI
 
 struct ContentView: View {
-    @Binding var document: TextDocument
+    @Environment(EditorStore.self) private var editorStore
     @State private var showPreview = true
     @Environment(ThemeStore.self) private var themeStore
 
     var body: some View {
-        Group {
-            if showPreview {
-                HSplitView {
+        NavigationSplitView {
+            sidebar
+                .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 320)
+        } detail: {
+            Group {
+                if editorStore.selectedFileURL == nil {
+                    emptyStateView
+                } else if showPreview {
+                    HSplitView {
+                        editorView
+                            .frame(minWidth: 280)
+                        WebView(markdown: editorStore.documentText, theme: themeStore.previewTheme)
+                            .frame(minWidth: 280)
+                    }
+                } else {
                     editorView
-                        .frame(minWidth: 200)
-                    WebView(markdown: document.text, theme: themeStore.previewTheme)
-                        .frame(minWidth: 200)
                 }
-            } else {
-                editorView
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .navigationTitle(editorStore.currentTitle)
+        .onChange(of: editorStore.documentText) { _, _ in
+            editorStore.scheduleAutosave()
         }
         .toolbar {
             ToolbarItem(placement: .navigation) {
@@ -30,13 +42,75 @@ struct ContentView: View {
                 }
                 .help(showPreview ? "Hide Preview" : "Show Preview")
             }
+
+            ToolbarItem {
+                Button(action: { editorStore.persistCurrentDocument() }) {
+                    Image(systemName: "square.and.arrow.down")
+                }
+                .help("Save")
+                .disabled(editorStore.selectedFileURL == nil)
+            }
+
+            ToolbarItem {
+                Button(action: { editorStore.refreshFiles() }) {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .help("Refresh Folder")
+            }
+        }
+    }
+
+    private var sidebar: some View {
+        List(selection: selectedFileBinding) {
+            Section(editorStore.rootURL?.lastPathComponent ?? "Files") {
+                OutlineGroup(editorStore.fileTree, children: \.children) { node in
+                    sidebarRow(for: node)
+                }
+            }
+        }
+        .listStyle(.sidebar)
+        .overlay(alignment: .bottomLeading) {
+            if let errorMessage = editorStore.errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(12)
+            }
         }
     }
 
     private var editorView: some View {
-        TextEditor(text: $document.text)
+        TextEditor(text: Bindable(editorStore).documentText)
             .font(.system(.body, design: .monospaced))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var emptyStateView: some View {
+        ContentUnavailableView(
+            "No File Selected",
+            systemImage: "doc.text",
+            description: Text("Choose a text or markdown file from \(editorStore.rootURL?.path ?? "folder").")
+        )
+    }
+
+    private var selectedFileBinding: Binding<URL?> {
+        Binding(
+            get: { editorStore.selectedFileURL },
+            set: { newValue in
+                guard let newValue else { return }
+                editorStore.selectFile(at: newValue)
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func sidebarRow(for node: EditorStore.FileNode) -> some View {
+        if node.isDirectory {
+            Label(node.name, systemImage: "folder")
+        } else {
+            Label(node.name, systemImage: "doc.text")
+                .tag(Optional(node.url))
+        }
     }
 }
 
@@ -45,21 +119,13 @@ struct ContentView: View {
 }
 
 private struct ContentViewPreview: View {
-    @State private var document = TextDocument(
-        text: """
-        # Writer Preview
-
-        This is a sample document for the canvas.
-
-        - Edit text on the left
-        - Inspect the rendered preview on the right
-        """
-    )
+    @State private var editorStore = EditorStore()
     @State private var themeStore = ThemeStore()
 
     var body: some View {
-        ContentView(document: $document)
+        ContentView()
+            .environment(editorStore)
             .environment(themeStore)
-            .frame(width: 900, height: 600)
+            .frame(width: 1100, height: 700)
     }
 }

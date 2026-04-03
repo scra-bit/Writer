@@ -1,33 +1,115 @@
 import SwiftUI
 import WebKit
+import Observation
 
-struct WebView: NSViewRepresentable {
+struct WebView: View {
     let markdown: String
     let theme: PreviewTheme
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
+    @Environment(ThemeStore.self) private var themeStore
+    @State private var isHoveringCorner = false
+    
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            WebViewRepresentable(markdown: markdown, theme: themeStore.previewTheme)
+            
+            // Hover area in bottom-right corner
+            // This stays visible when popover is shown to maintain hover state
+            if !isHoveringCorner {
+                Color.clear
+                    .frame(width: 80, height: 80)
+                    .contentShape(Rectangle())
+                    .onHover { isHovering in
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            isHoveringCorner = isHovering
+                        }
+                    }
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            // Popover - appears when hovering corner, stays when hovering popover
+            if isHoveringCorner {
+                themeSelectorPopover
+                    .padding(.trailing, 8)
+                    .padding(.bottom, 8)
+                    .onHover { isHovering in
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            isHoveringCorner = isHovering
+                        }
+                    }
+            }
+        }
     }
+    
+    private var themeSelectorPopover: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Theme")
+                .font(.headline)
+                .padding(.bottom, 4)
+            
+            ForEach(PreviewTheme.allThemes, id: \.name) { themeOption in
+                ThemeRowView(themeOption: themeOption, selectedTheme: themeStore.previewTheme) {
+                    themeStore.previewTheme = themeOption
+                }
+            }
+        }
+        .padding(12)
+        .frame(width: 140)
+    }
+}
 
+private struct ThemeRowView: View {
+    let themeOption: PreviewTheme
+    let selectedTheme: PreviewTheme
+    let action: () -> Void
+    
+    private var isSelected: Bool {
+        selectedTheme.name == themeOption.name
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(themeOption.name)
+                    .foregroundStyle(isSelected ? .primary : .secondary)
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .padding(.vertical, 4)
+            .padding(.horizontal, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct WebViewRepresentable: NSViewRepresentable {
+    let markdown: String
+    let theme: PreviewTheme
+    
     func makeNSView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
-
+        
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.setValue(NSColor.white, forKey: "backgroundColor")
         return webView
     }
-
+    
     func updateNSView(_ webView: WKWebView, context: Context) {
         let html = renderMarkdownToHTML(markdown)
         webView.loadHTMLString(html, baseURL: nil)
     }
-
+    
     private func renderMarkdownToHTML(_ markdown: String) -> String {
         let bodyContent = renderBodyContent(markdown)
         return wrapInHTMLDocument(bodyContent)
     }
-
+    
     private func renderBodyContent(_ markdown: String) -> String {
         var html = markdown
         html = escapeHTMLEntities(html)
@@ -42,14 +124,14 @@ struct WebView: NSViewRepresentable {
         html = wrapParagraphs(html)
         return html
     }
-
+    
     private func escapeHTMLEntities(_ text: String) -> String {
         text
             .replacingOccurrences(of: "&", with: "&amp;")
             .replacingOccurrences(of: "<", with: "&lt;")
             .replacingOccurrences(of: ">", with: "&gt;")
     }
-
+    
     private func processCodeBlocks(_ text: String) -> String {
         guard let regex = try? NSRegularExpression(pattern: "```([\\s\\S]*?)```", options: []) else {
             return text
@@ -61,7 +143,7 @@ struct WebView: NSViewRepresentable {
             withTemplate: "<pre><code>$1</code></pre>"
         )
     }
-
+    
     private func processInlineCode(_ text: String) -> String {
         guard let regex = try? NSRegularExpression(pattern: "`([^`]+)`", options: []) else {
             return text
@@ -73,10 +155,10 @@ struct WebView: NSViewRepresentable {
             withTemplate: "<code>$1</code>"
         )
     }
-
+    
     private func processBoldAndItalic(_ text: String) -> String {
         var result = text
-
+        
         // Bold + Italic: ***text***
         if let regex = try? NSRegularExpression(pattern: "\\*\\*\\*(.+?)\\*\\*\\*", options: []) {
             result = regex.stringByReplacingMatches(
@@ -86,7 +168,7 @@ struct WebView: NSViewRepresentable {
                 withTemplate: "<strong><em>$1</em></strong>"
             )
         }
-
+        
         // Bold: **text**
         if let regex = try? NSRegularExpression(pattern: "\\*\\*(.+?)\\*\\*", options: []) {
             result = regex.stringByReplacingMatches(
@@ -96,7 +178,7 @@ struct WebView: NSViewRepresentable {
                 withTemplate: "<strong>$1</strong>"
             )
         }
-
+        
         // Italic: *text* (but not already processed bold)
         if let regex = try? NSRegularExpression(pattern: "\\*(.+?)\\*", options: []) {
             result = regex.stringByReplacingMatches(
@@ -106,10 +188,10 @@ struct WebView: NSViewRepresentable {
                 withTemplate: "<em>$1</em>"
             )
         }
-
+        
         return result
     }
-
+    
     private func processLinks(_ text: String) -> String {
         guard let regex = try? NSRegularExpression(pattern: "\\[([^\\]]+)\\]\\(([^)]+)\\)", options: []) else {
             return text
@@ -121,7 +203,7 @@ struct WebView: NSViewRepresentable {
             withTemplate: "<a href=\"$2\">$1</a>"
         )
     }
-
+    
     private func processHeaders(_ text: String) -> String {
         var result = text
         let headerPatterns = [
@@ -132,7 +214,7 @@ struct WebView: NSViewRepresentable {
             ("^##\\s+(.+)$", "<h2>$1</h2>"),
             ("^#\\s+(.+)$", "<h1>$1</h1>")
         ]
-
+        
         for (pattern, replacement) in headerPatterns {
             guard let regex = try? NSRegularExpression(pattern: pattern, options: .anchorsMatchLines) else {
                 continue
@@ -144,10 +226,10 @@ struct WebView: NSViewRepresentable {
                 withTemplate: replacement
             )
         }
-
+        
         return result
     }
-
+    
     private func processBlockquotes(_ text: String) -> String {
         guard let regex = try? NSRegularExpression(pattern: "^&gt;\\s*(.+)$", options: .anchorsMatchLines) else {
             return text
@@ -159,7 +241,7 @@ struct WebView: NSViewRepresentable {
             withTemplate: "<blockquote>$1</blockquote>"
         )
     }
-
+    
     private func processLists(_ text: String) -> String {
         guard let regex = try? NSRegularExpression(pattern: "^[-*+]\\s+(.+)$", options: .anchorsMatchLines) else {
             return text
@@ -171,7 +253,7 @@ struct WebView: NSViewRepresentable {
             withTemplate: "<li>$1</li>"
         )
     }
-
+    
     private func processHorizontalRules(_ text: String) -> String {
         guard let regex = try? NSRegularExpression(pattern: "^---+$", options: .anchorsMatchLines) else {
             return text
@@ -183,15 +265,15 @@ struct WebView: NSViewRepresentable {
             withTemplate: "<hr>"
         )
     }
-
+    
     private func wrapParagraphs(_ text: String) -> String {
         let lines = text.components(separatedBy: "\n")
         var result: [String] = []
         var inList = false
-
+        
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
-
+            
             guard !trimmed.isEmpty else {
                 if inList {
                     result.append("</ul>")
@@ -199,12 +281,12 @@ struct WebView: NSViewRepresentable {
                 }
                 continue
             }
-
+            
             let isBlockElement = trimmed.hasPrefix("<h") ||
                                 trimmed.hasPrefix("<pre") ||
                                 trimmed.hasPrefix("<blockquote") ||
                                 trimmed.hasPrefix("<hr")
-
+            
             if trimmed.hasPrefix("<li>") {
                 if !inList {
                     result.append("<ul>")
@@ -225,14 +307,14 @@ struct WebView: NSViewRepresentable {
                 result.append("<p>\(trimmed)</p>")
             }
         }
-
+        
         if inList {
             result.append("</ul>")
         }
-
+        
         return result.joined(separator: "\n")
     }
-
+    
     private func wrapInHTMLDocument(_ bodyContent: String) -> String {
         """
         <!DOCTYPE html>
@@ -248,8 +330,5 @@ struct WebView: NSViewRepresentable {
         </body>
         </html>
         """
-    }
-
-    class Coordinator: NSObject {
     }
 }
