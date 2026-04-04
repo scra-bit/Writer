@@ -6,6 +6,9 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var showNewFileSheet = false
+    @State private var newFileName = ""
+    @State private var newFileExtension = "md"
     @Environment(EditorStore.self) private var editorStore
     @State private var showPreview = true
     @Environment(ThemeStore.self) private var themeStore
@@ -77,6 +80,18 @@ struct ContentView: View {
                     .padding(12)
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            Button(action: { showNewFileSheet = true }) {
+                Label("New File", systemImage: "plus")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+            }
+            .buttonStyle(.plain)
+            .background(.bar)
+        }
+        .sheet(isPresented: $showNewFileSheet) {
+            newFileSheet
+        }
     }
 
     private var editorView: some View {
@@ -91,6 +106,43 @@ struct ContentView: View {
             systemImage: "doc.text",
             description: Text("Choose a text or markdown file from \(editorStore.rootURL?.path ?? "folder").")
         )
+    }
+    
+    private var newFileSheet: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("New File")
+                .font(.headline)
+
+            TextField("File name", text: $newFileName)
+                .textFieldStyle(.roundedBorder)
+
+            Picker("Format", selection: $newFileExtension) {
+                Text("Markdown (.md)").tag("md")
+                Text("Plain Text (.txt)").tag("txt")
+            }
+            .pickerStyle(.radioGroup)
+
+            HStack {
+                Button("Cancel") {
+                    showNewFileSheet = false
+                    newFileName = ""
+                }
+                .keyboardShortcut(.escape, modifiers: [])
+
+                Spacer()
+
+                Button("Create") {
+                    editorStore.createFile(named: newFileName, extension: newFileExtension)
+                    showNewFileSheet = false
+                    newFileName = ""
+                }
+                .keyboardShortcut(.return, modifiers: [])
+                .buttonStyle(.borderedProminent)
+                .disabled(newFileName.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        }
+        .padding(24)
+        .frame(width: 300)
     }
 
     private var selectedFileBinding: Binding<URL?> {

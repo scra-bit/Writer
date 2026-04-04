@@ -196,6 +196,26 @@ final class EditorStore {
             errorMessage = "Couldn't save \(selectedFileURL.lastPathComponent): \(error.localizedDescription)"
         }
     }
+    
+    func createFile(named name: String, extension ext: String) {
+        guard let rootURL else {
+            errorMessage = "No folder selected."
+            return
+        }
+
+        var fileName = name.trimmingCharacters(in: .whitespaces)
+        if fileName.isEmpty { fileName = "Untitled" }
+
+        let fileURL = rootURL.appendingPathComponent("\(fileName).\(ext)")
+
+        do {
+            try "".write(to: fileURL, atomically: true, encoding: .utf8)
+            refreshFiles()
+            selectFile(at: fileURL)
+        } catch {
+            errorMessage = "Couldn't create file: \(error.localizedDescription)"
+        }
+    }
 
     private func loadNodes(in directoryURL: URL) throws -> [FileNode] {
         let contents = try FileManager.default.contentsOfDirectory(
