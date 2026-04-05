@@ -6,84 +6,32 @@ struct WebView: View {
     let markdown: String
     let theme: PreviewTheme
     @Environment(ThemeStore.self) private var themeStore
-    @State private var isHoveringCorner = false
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             WebViewRepresentable(markdown: markdown, theme: themeStore.previewTheme)
-            
-            // Hover area in bottom-right corner
-            // This stays visible when popover is shown to maintain hover state
-            if !isHoveringCorner {
-                Color.clear
-                    .frame(width: 80, height: 80)
-                    .contentShape(Rectangle())
-                    .onHover { isHovering in
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            isHoveringCorner = isHovering
-                        }
-                    }
-            }
         }
         .overlay(alignment: .bottomTrailing) {
-            // Popover - appears when hovering corner, stays when hovering popover
-            if isHoveringCorner {
-                themeSelectorPopover
-                    .padding(.trailing, 8)
-                    .padding(.bottom, 8)
-                    .onHover { isHovering in
-                        withAnimation(.easeInOut(duration: 0.15)) {
-                            isHoveringCorner = isHovering
-                        }
+            Menu {
+                ForEach(PreviewTheme.allThemes, id: \.name) { themeOption in
+                    Button(themeOption.name) {
+                        themeStore.previewTheme = themeOption
                     }
-            }
-        }
-    }
-    
-    private var themeSelectorPopover: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Theme")
-                .font(.headline)
-                .padding(.bottom, 4)
-            
-            ForEach(PreviewTheme.allThemes, id: \.name) { themeOption in
-                ThemeRowView(themeOption: themeOption, selectedTheme: themeStore.previewTheme) {
-                    themeStore.previewTheme = themeOption
                 }
-            }
-        }
-        .padding(12)
-        .frame(width: 140)
-    }
-}
-
-private struct ThemeRowView: View {
-    let themeOption: PreviewTheme
-    let selectedTheme: PreviewTheme
-    let action: () -> Void
-    
-    private var isSelected: Bool {
-        selectedTheme.name == themeOption.name
-    }
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Text(themeOption.name)
-                    .foregroundStyle(isSelected ? .primary : .secondary)
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(Color.accentColor)
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "paintbrush")
+                        .font(.system(size: 12))
+                    Text(themeStore.previewTheme.name)
+                        .font(.system(size: 11))
                 }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
             }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
-            )
+            .menuStyle(.borderlessButton)
+            .padding(.trailing, 6)
+            .padding(.bottom, 6)
         }
-        .buttonStyle(.plain)
     }
 }
 
