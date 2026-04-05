@@ -52,7 +52,7 @@ final class EditorStore {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
-        panel.message = "Select the forthewriting folder"
+        panel.message = "Select your writing folder"
         panel.prompt = "Select Folder"
 
         guard panel.runModal() == .OK, let url = panel.url else {
