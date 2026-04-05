@@ -18,10 +18,5 @@ struct WriterApp: App {
         }
         .defaultSize(width: 1200, height: 760)
         .restorationBehavior(.disabled)
-
-        Settings {
-            ThemeEditorView()
-                .environment(themeStore)
-        }
     }
 }
