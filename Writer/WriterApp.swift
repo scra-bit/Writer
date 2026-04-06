@@ -9,14 +9,57 @@ import SwiftUI
 struct WriterApp: App {
     @State private var editorStore = EditorStore()
     @State private var themeStore = ThemeStore()
+    @State private var exportError: String? = nil
+    @State private var exportSuccess: String? = nil
+
+    private func exportToHTML() {
+        let exporter = HTMLExporter(markdown: editorStore.documentText, theme: themeStore.previewTheme)
+        let suggestedName = (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document") + ".html"
+        Task {
+            do {
+                let url = try await exporter.save(suggestedName: suggestedName)
+                exportSuccess = url.path
+            } catch let error as any Error where (error as NSError).code != NSUserCancelledError {
+                exportError = error.localizedDescription
+            }
+        }
+    }
 
     var body: some Scene {
         Window("Writer", id: "main") {
             ContentView()
                 .environment(editorStore)
                 .environment(themeStore)
+                .alert("Export Error", isPresented: Binding(
+                    get: { exportError != nil },
+                    set: { if !$0 { exportError = nil } }
+                )) {
+                    Button("OK") {
+                        exportError = nil
+                    }
+                } message: {
+                    Text(exportError ?? "")
+                }
+                .onChange(of: exportSuccess) { _, newValue in
+                    if newValue != nil {
+                        Task {
+                            try? await Task.sleep(for: .seconds(3))
+                            exportSuccess = nil
+                        }
+                    }
+                }
         }
         .defaultSize(width: 1200, height: 760)
         .restorationBehavior(.disabled)
+        .commands {
+            CommandGroup(replacing: .newItem) {}
+            CommandMenu("File") {
+                Button("Export to HTML") {
+                    exportToHTML()
+                }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+                .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
+            }
+        }
     }
 }

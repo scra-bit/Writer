@@ -5,6 +5,8 @@
 
 import SwiftUI
 
+// HTMLExporter is defined in HTMLExporter.swift within the same module
+
 struct ContentView: View {
     @State private var showNewFileSheet = false
     @State private var newFileName = ""
