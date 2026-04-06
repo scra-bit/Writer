@@ -97,6 +97,7 @@ struct ContentView: View {
         TextEditor(text: Bindable(editorStore).documentText)
             .font(.system(.body, design: .monospaced))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.horizontal, 24)
     }
 
     private var emptyStateView: some View {
