@@ -1,6 +1,7 @@
 import SwiftUI
 import WebKit
 import Observation
+import Markdown
 
 struct WebView: View {
     let markdown: String
@@ -59,17 +60,15 @@ struct WebViewRepresentable: NSViewRepresentable {
     }
     
     private func renderBodyContent(_ markdown: String) -> String {
-        var html = markdown
-        html = escapeHTMLEntities(html)
-        html = processCodeBlocks(html)
-        html = processInlineCode(html)
-        html = processBoldAndItalic(html)
-        html = processLinks(html)
-        html = processHeaders(html)
-        html = processBlockquotes(html)
-        html = processLists(html)
-        html = processHorizontalRules(html)
-        html = wrapParagraphs(html)
+        let escaped = escapeHTMLEntities(markdown)
+        
+        let document = Document(parsing: escaped)
+        var visitor = HTMLVisitor()
+        var html = document.accept(&visitor)
+        
+        // Process custom ==highlight== syntax
+        html = processHighlights(html)
+        
         return html
     }
     
@@ -80,187 +79,16 @@ struct WebViewRepresentable: NSViewRepresentable {
             .replacingOccurrences(of: ">", with: "&gt;")
     }
     
-    private func processCodeBlocks(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: "```([\\s\\S]*?)```", options: []) else {
+    private func processHighlights(_ text: String) -> String {
+        guard let regex = try? NSRegularExpression(pattern: "==(.+?)==", options: []) else {
             return text
         }
         return regex.stringByReplacingMatches(
             in: text,
             options: [],
             range: NSRange(text.startIndex..., in: text),
-            withTemplate: "<pre><code>$1</code></pre>"
+            withTemplate: "<mark class=\"highlight\">$1</mark>"
         )
-    }
-    
-    private func processInlineCode(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: "`([^`]+)`", options: []) else {
-            return text
-        }
-        return regex.stringByReplacingMatches(
-            in: text,
-            options: [],
-            range: NSRange(text.startIndex..., in: text),
-            withTemplate: "<code>$1</code>"
-        )
-    }
-    
-    private func processBoldAndItalic(_ text: String) -> String {
-        var result = text
-        
-        // Bold + Italic: ***text***
-        if let regex = try? NSRegularExpression(pattern: "\\*\\*\\*(.+?)\\*\\*\\*", options: []) {
-            result = regex.stringByReplacingMatches(
-                in: result,
-                options: [],
-                range: NSRange(result.startIndex..., in: result),
-                withTemplate: "<strong><em>$1</em></strong>"
-            )
-        }
-        
-        // Bold: **text**
-        if let regex = try? NSRegularExpression(pattern: "\\*\\*(.+?)\\*\\*", options: []) {
-            result = regex.stringByReplacingMatches(
-                in: result,
-                options: [],
-                range: NSRange(result.startIndex..., in: result),
-                withTemplate: "<strong>$1</strong>"
-            )
-        }
-        
-        // Italic: *text* (but not already processed bold)
-        if let regex = try? NSRegularExpression(pattern: "\\*(.+?)\\*", options: []) {
-            result = regex.stringByReplacingMatches(
-                in: result,
-                options: [],
-                range: NSRange(result.startIndex..., in: result),
-                withTemplate: "<em>$1</em>"
-            )
-        }
-        
-        return result
-    }
-    
-    private func processLinks(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: "\\[([^\\]]+)\\]\\(([^)]+)\\)", options: []) else {
-            return text
-        }
-        return regex.stringByReplacingMatches(
-            in: text,
-            options: [],
-            range: NSRange(text.startIndex..., in: text),
-            withTemplate: "<a href=\"$2\">$1</a>"
-        )
-    }
-    
-    private func processHeaders(_ text: String) -> String {
-        var result = text
-        let headerPatterns = [
-            ("^######\\s+(.+)$", "<h6>$1</h6>"),
-            ("^#####\\s+(.+)$", "<h5>$1</h5>"),
-            ("^####\\s+(.+)$", "<h4>$1</h4>"),
-            ("^###\\s+(.+)$", "<h3>$1</h3>"),
-            ("^##\\s+(.+)$", "<h2>$1</h2>"),
-            ("^#\\s+(.+)$", "<h1>$1</h1>")
-        ]
-        
-        for (pattern, replacement) in headerPatterns {
-            guard let regex = try? NSRegularExpression(pattern: pattern, options: .anchorsMatchLines) else {
-                continue
-            }
-            result = regex.stringByReplacingMatches(
-                in: result,
-                options: [],
-                range: NSRange(result.startIndex..., in: result),
-                withTemplate: replacement
-            )
-        }
-        
-        return result
-    }
-    
-    private func processBlockquotes(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: "^&gt;\\s*(.+)$", options: .anchorsMatchLines) else {
-            return text
-        }
-        return regex.stringByReplacingMatches(
-            in: text,
-            options: [],
-            range: NSRange(text.startIndex..., in: text),
-            withTemplate: "<blockquote>$1</blockquote>"
-        )
-    }
-    
-    private func processLists(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: "^[-*+]\\s+(.+)$", options: .anchorsMatchLines) else {
-            return text
-        }
-        return regex.stringByReplacingMatches(
-            in: text,
-            options: [],
-            range: NSRange(text.startIndex..., in: text),
-            withTemplate: "<li>$1</li>"
-        )
-    }
-    
-    private func processHorizontalRules(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: "^---+$", options: .anchorsMatchLines) else {
-            return text
-        }
-        return regex.stringByReplacingMatches(
-            in: text,
-            options: [],
-            range: NSRange(text.startIndex..., in: text),
-            withTemplate: "<hr>"
-        )
-    }
-    
-    private func wrapParagraphs(_ text: String) -> String {
-        let lines = text.components(separatedBy: "\n")
-        var result: [String] = []
-        var inList = false
-        
-        for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            
-            guard !trimmed.isEmpty else {
-                if inList {
-                    result.append("</ul>")
-                    inList = false
-                }
-                continue
-            }
-            
-            let isBlockElement = trimmed.hasPrefix("<h") ||
-                                trimmed.hasPrefix("<pre") ||
-                                trimmed.hasPrefix("<blockquote") ||
-                                trimmed.hasPrefix("<hr")
-            
-            if trimmed.hasPrefix("<li>") {
-                if !inList {
-                    result.append("<ul>")
-                    inList = true
-                }
-                result.append(line)
-            } else if isBlockElement {
-                if inList {
-                    result.append("</ul>")
-                    inList = false
-                }
-                result.append(trimmed)
-            } else {
-                if inList {
-                    result.append("</ul>")
-                    inList = false
-                }
-                result.append("<p>\(trimmed)</p>")
-            }
-        }
-        
-        if inList {
-            result.append("</ul>")
-        }
-        
-        return result.joined(separator: "\n")
     }
     
     private func wrapInHTMLDocument(_ bodyContent: String) -> String {
@@ -278,5 +106,129 @@ struct WebViewRepresentable: NSViewRepresentable {
         </body>
         </html>
         """
+    }
+}
+
+// Custom MarkupVisitor to generate HTML
+struct HTMLVisitor: MarkupVisitor {
+    typealias Result = String
+    
+    mutating func defaultVisit(_ markup: Markup) -> String {
+        return markup.children.map { $0.accept(&self) }.joined()
+    }
+    
+    mutating func visitDocument(_ document: Document) -> String {
+        return document.children.map { $0.accept(&self) }.joined()
+    }
+    
+    mutating func visitHeading(_ heading: Heading) -> String {
+        let level = heading.level
+        let content = heading.children.map { $0.accept(&self) }.joined()
+        return "<h\(level)>\(content)</h\(level)>\n"
+    }
+    
+    mutating func visitParagraph(_ paragraph: Paragraph) -> String {
+        let content = paragraph.children.map { $0.accept(&self) }.joined()
+        return "<p>\(content)</p>\n"
+    }
+    
+    mutating func visitText(_ text: Markdown.Text) -> String {
+        return text.string
+    }
+    
+    mutating func visitStrong(_ strong: Strong) -> String {
+        let content = strong.children.map { $0.accept(&self) }.joined()
+        return "<strong>\(content)</strong>"
+    }
+    
+    mutating func visitEmphasis(_ emphasis: Emphasis) -> String {
+        let content = emphasis.children.map { $0.accept(&self) }.joined()
+        return "<em>\(content)</em>"
+    }
+    
+    mutating func visitInlineCode(_ inlineCode: InlineCode) -> String {
+        return "<code>\(inlineCode.code)</code>"
+    }
+    
+    mutating func visitCodeBlock(_ codeBlock: CodeBlock) -> String {
+        let language = codeBlock.language ?? ""
+        let code = codeBlock.code
+        if language.isEmpty {
+            return "<pre><code>\(code)</code></pre>\n"
+        }
+        return "<pre><code class=\"language-\(language)\">\(code)</code></pre>\n"
+    }
+    
+    mutating func visitLink(_ link: Markdown.Link) -> String {
+        let content = link.children.map { $0.accept(&self) }.joined()
+        let destination = link.destination ?? ""
+        return "<a href=\"\(destination)\">\(content)</a>"
+    }
+    
+    mutating func visitBlockQuote(_ blockQuote: BlockQuote) -> String {
+        let content = blockQuote.children.map { $0.accept(&self) }.joined()
+        return "<blockquote>\n\(content)</blockquote>\n"
+    }
+    
+    mutating func visitUnorderedList(_ unorderedList: UnorderedList) -> String {
+        let content = unorderedList.children.map { $0.accept(&self) }.joined()
+        return "<ul>\n\(content)</ul>\n"
+    }
+    
+    mutating func visitOrderedList(_ orderedList: OrderedList) -> String {
+        let content = orderedList.children.map { $0.accept(&self) }.joined()
+        return "<ol>\n\(content)</ol>\n"
+    }
+    
+    mutating func visitListItem(_ listItem: ListItem) -> String {
+        let content = listItem.children.map { $0.accept(&self) }.joined()
+        return "<li>\(content)</li>\n"
+    }
+    
+    mutating func visitThematicBreak(_ thematicBreak: ThematicBreak) -> String {
+        return "<hr>\n"
+    }
+    
+    mutating func visitSoftBreak(_ softBreak: SoftBreak) -> String {
+        return "\n"
+    }
+    
+    mutating func visitLineBreak(_ lineBreak: LineBreak) -> String {
+        return "<br>\n"
+    }
+    
+    mutating func visitImage(_ image: Markdown.Image) -> String {
+        let alt = image.children.map { $0.accept(&self) }.joined()
+        let src = image.source ?? ""
+        let title = image.title ?? ""
+        if title.isEmpty {
+            return "<img src=\"\(src)\" alt=\"\(alt)\">"
+        }
+        return "<img src=\"\(src)\" alt=\"\(alt)\" title=\"\(title)\">"
+    }
+    
+    mutating func visitTable(_ table: Markdown.Table) -> String {
+        let content = table.children.map { $0.accept(&self) }.joined()
+        return "<table>\n\(content)</table>\n"
+    }
+    
+    mutating func visitTableHead(_ tableHead: Markdown.Table.Head) -> String {
+        let content = tableHead.children.map { $0.accept(&self) }.joined()
+        return "<thead>\n<tr>\(content)</tr>\n</thead>\n"
+    }
+    
+    mutating func visitTableBody(_ tableBody: Markdown.Table.Body) -> String {
+        let content = tableBody.children.map { $0.accept(&self) }.joined()
+        return "<tbody>\n\(content)</tbody>\n"
+    }
+    
+    mutating func visitTableRow(_ tableRow: Markdown.Table.Row) -> String {
+        let content = tableRow.children.map { $0.accept(&self) }.joined()
+        return "<tr>\(content)</tr>\n"
+    }
+    
+    mutating func visitTableCell(_ tableCell: Markdown.Table.Cell) -> String {
+        let content = tableCell.children.map { $0.accept(&self) }.joined()
+        return "<td>\(content)</td>"
     }
 }
