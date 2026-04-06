@@ -95,7 +95,8 @@ struct ContentView: View {
 
     private var editorView: some View {
         TextEditor(text: Bindable(editorStore).documentText)
-            .font(.system(.body, design: .monospaced))
+            .font(.system(size: 16, design: .monospaced))
+            .lineSpacing(3)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(.horizontal, 24)
     }
