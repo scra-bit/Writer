@@ -8,7 +8,6 @@ import SwiftUI
 struct ContentView: View {
     @State private var showNewFileSheet = false
     @State private var newFileName = ""
-    @State private var newFileExtension = "md"
     @Environment(EditorStore.self) private var editorStore
     @State private var showPreview = true
     @Environment(ThemeStore.self) private var themeStore
@@ -116,11 +115,8 @@ struct ContentView: View {
             TextField("File name", text: $newFileName)
                 .textFieldStyle(.roundedBorder)
 
-            Picker("Format", selection: $newFileExtension) {
-                Text("Markdown (.md)").tag("md")
-                Text("Plain Text (.txt)").tag("txt")
-            }
-            .pickerStyle(.radioGroup)
+            Text("Plain Text (.txt)")
+                .foregroundStyle(.secondary)
 
             HStack {
                 Button("Cancel") {
@@ -132,7 +128,7 @@ struct ContentView: View {
                 Spacer()
 
                 Button("Create") {
-                    editorStore.createFile(named: newFileName, extension: newFileExtension)
+                    editorStore.createFile(named: newFileName, extension: "txt")
                     showNewFileSheet = false
                     newFileName = ""
                 }
