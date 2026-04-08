@@ -12,6 +12,9 @@ struct ContentView: View {
     @Environment(EditorStore.self) private var editorStore
     @State private var showPreview = true
     @Environment(ThemeStore.self) private var themeStore
+    @State private var renamingURL: URL?
+    @State private var renamingText = ""
+    @State private var dropTargetURL: URL?
 
     var body: some View {
         NavigationSplitView {
@@ -37,6 +40,11 @@ struct ContentView: View {
         .navigationTitle(editorStore.currentTitle)
         .onChange(of: editorStore.documentText) { _, _ in
             editorStore.scheduleAutosave()
+        }
+        .onChange(of: renamingURL) { _, newValue in
+            if newValue == nil {
+                renamingText = ""
+            }
         }
         .sheet(item: Bindable(editorStore).pendingCreation) { creation in
             creationSheet(for: creation)
@@ -75,6 +83,49 @@ struct ContentView: View {
             }
         }
         .listStyle(.sidebar)
+        .dropDestination(
+            for: URL.self,
+            action: { urls, _ in
+                handleDrop(urls: urls, onto: editorStore.rootURL ?? URL(fileURLWithPath: ""))
+                return true
+            },
+            isTargeted: { isTargeted in
+                if isTargeted {
+                    dropTargetURL = editorStore.rootURL
+                } else if dropTargetURL == editorStore.rootURL {
+                    dropTargetURL = nil
+                }
+            }
+        )
+        .contextMenu {
+            if let rootURL = editorStore.rootURL {
+                Button("New File") {
+                    editorStore.pendingCreation = .file
+                }
+
+                Button("New Folder") {
+                    editorStore.pendingCreation = .folder
+                }
+
+                if editorStore.canPaste(into: rootURL) {
+                    Divider()
+
+                    Button("Paste") {
+                        editorStore.pasteItems(to: rootURL)
+                    }
+                }
+
+                Divider()
+
+                Button("Show in Finder") {
+                    editorStore.revealInFinder(rootURL)
+                }
+
+                Button("Open in Finder") {
+                    editorStore.openFolder(rootURL)
+                }
+            }
+        }
         .overlay(alignment: .bottomLeading) {
             if let errorMessage = editorStore.errorMessage {
                 Text(errorMessage)
@@ -159,34 +210,293 @@ struct ContentView: View {
         )
     }
 
-    private func sidebarNodeRow(for node: EditorStore.FileNode) -> AnyView {
+    private func sidebarNodeRow(for node: EditorStore.FileNode, depth: Int = 0) -> AnyView {
+        let isRenaming = renamingURL == node.url
+        let isDropTarget = dropTargetURL == node.url && node.isDirectory
+
         if node.isDirectory {
-            return AnyView(
-                DisclosureGroup(
-                    isExpanded: Binding(
-                        get: { editorStore.isExpanded(node.url) },
-                        set: { _ in editorStore.toggleExpansion(for: node.url) }
-                    )
-                ) {
-                    if let children = node.children {
-                        ForEach(children) { childNode in
-                            sidebarNodeRow(for: childNode)
-                        }
+            let view = DisclosureGroup(
+                isExpanded: Binding(
+                    get: { editorStore.isExpanded(node.url) },
+                    set: { _ in editorStore.toggleExpansion(for: node.url) }
+                )
+            ) {
+                if let children = node.children {
+                    ForEach(children) { childNode in
+                        sidebarNodeRow(for: childNode, depth: depth + 1)
                     }
-                } label: {
-                    Label(node.name, systemImage: "folder")
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            editorStore.toggleExpansion(for: node.url)
-                        }
+                }
+            } label: {
+                folderLabel(for: node, isRenaming: isRenaming, isDropTarget: isDropTarget)
+            }
+            .tag(Optional(node.url))
+            .contextMenu {
+                folderContextMenu(for: node)
+            }
+            .dropDestination(
+                for: URL.self,
+                action: { urls, _ in
+                    handleDrop(urls: urls, onto: node.url)
+                    return true
+                },
+                isTargeted: { isTargeted in
+                    if isTargeted {
+                        dropTargetURL = node.url
+                    } else if dropTargetURL == node.url {
+                        dropTargetURL = nil
+                    }
                 }
             )
+            return AnyView(view)
         }
 
-        return AnyView(
-            Label(node.name, systemImage: "doc.text")
-                .tag(Optional(node.url))
-        )
+        let view = Group {
+            if isRenaming {
+                renamingField(for: node)
+                    .tag(Optional(node.url))
+            } else {
+                fileLabel(for: node)
+                    .tag(Optional(node.url))
+                    .contextMenu {
+                        fileContextMenu(for: node)
+                    }
+            }
+        }
+        return AnyView(view)
+    }
+
+    // MARK: - Labels and Views
+
+    @ViewBuilder
+    private func folderLabel(for node: EditorStore.FileNode, isRenaming: Bool, isDropTarget: Bool) -> some View {
+        if isRenaming {
+            renamingField(for: node)
+        } else {
+            HStack(spacing: 4) {
+                Image(systemName: "line.3.horizontal")
+                    .foregroundStyle(.secondary)
+                    .font(.system(size: 10))
+                    .onDrag {
+                        NSItemProvider(object: node.url as NSURL)
+                    }
+
+                Label(node.name, systemImage: isDropTarget ? "folder.fill" : "folder")
+                    .contentShape(Rectangle())
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                editorStore.selectItem(at: node.url, isDirectory: true)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func fileLabel(for node: EditorStore.FileNode) -> some View {
+        let ext = node.url.pathExtension.lowercased()
+        let iconName: String = {
+            switch ext {
+            case "md", "markdown": return "doc.text"
+            case "txt", "text": return "doc.plaintext"
+            default: return "doc"
+            }
+        }()
+
+        HStack(spacing: 4) {
+            Image(systemName: "line.3.horizontal")
+                .foregroundStyle(.secondary)
+                .font(.system(size: 10))
+                .onDrag {
+                    NSItemProvider(object: node.url as NSURL)
+                }
+
+            Label(node.name, systemImage: iconName)
+                .contentShape(Rectangle())
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            editorStore.selectItem(at: node.url, isDirectory: false)
+        }
+    }
+
+    @ViewBuilder
+    private func renamingField(for node: EditorStore.FileNode) -> some View {
+        TextField("Name", text: $renamingText)
+            .textFieldStyle(.roundedBorder)
+            .onSubmit {
+                finishRenaming()
+            }
+            .onAppear {
+                renamingText = node.name
+            }
+    }
+
+    // MARK: - Context Menus
+
+    @ViewBuilder
+    private func fileContextMenu(for node: EditorStore.FileNode) -> some View {
+        Button("Open") {
+            editorStore.selectFile(at: node.url)
+        }
+
+        Divider()
+
+        Button("Rename") {
+            startRenaming(node.url)
+        }
+
+        Button("Duplicate") {
+            duplicateItem(at: node.url)
+        }
+
+        Divider()
+
+        Button("Copy") {
+            editorStore.copyItems([node.url])
+        }
+
+        Button("Cut") {
+            editorStore.cutItems([node.url])
+        }
+
+        if editorStore.canPaste(into: node.url.deletingLastPathComponent()) {
+            Button("Paste") {
+                editorStore.pasteItems(to: node.url.deletingLastPathComponent())
+            }
+        }
+
+        Divider()
+
+        Button("Show in Finder") {
+            editorStore.revealInFinder(node.url)
+        }
+
+        Button("Move to Trash", role: .destructive) {
+            editorStore.deleteItem(node.url)
+        }
+    }
+
+    @ViewBuilder
+    private func folderContextMenu(for node: EditorStore.FileNode) -> some View {
+        Button("New File") {
+            editorStore.pendingCreation = .file
+        }
+
+        Button("New Folder") {
+            editorStore.pendingCreation = .folder
+        }
+
+        Divider()
+
+        Button("Rename") {
+            startRenaming(node.url)
+        }
+
+        Divider()
+
+        Button("Copy") {
+            editorStore.copyItems([node.url])
+        }
+
+        Button("Cut") {
+            editorStore.cutItems([node.url])
+        }
+
+        if editorStore.canPaste(into: node.url) {
+            Button("Paste") {
+                editorStore.pasteItems(to: node.url)
+            }
+        }
+
+        Divider()
+
+        Button("Show in Finder") {
+            editorStore.revealInFinder(node.url)
+        }
+
+        Button("Open in Finder") {
+            editorStore.openFolder(node.url)
+        }
+
+        Button("Move to Trash", role: .destructive) {
+            editorStore.deleteItem(node.url)
+        }
+    }
+
+    // MARK: - Actions
+
+    private func startRenaming(_ url: URL) {
+        renamingURL = url
+        renamingText = url.lastPathComponent
+    }
+
+    private func finishRenaming() {
+        guard let url = renamingURL else { return }
+        editorStore.renameItem(url, to: renamingText)
+        renamingURL = nil
+        renamingText = ""
+    }
+
+    private func duplicateItem(at url: URL) {
+        let parent = url.deletingLastPathComponent()
+        let baseName = url.deletingPathExtension().lastPathComponent
+        let ext = url.pathExtension
+        var newName = baseName + " copy"
+        if !ext.isEmpty {
+            newName += "." + ext
+        }
+
+        var counter = 2
+        var destinationURL = parent.appendingPathComponent(newName)
+
+        while FileManager.default.fileExists(atPath: destinationURL.path) {
+            newName = baseName + " copy \(counter)"
+            if !ext.isEmpty {
+                newName += "." + ext
+            }
+            destinationURL = parent.appendingPathComponent(newName)
+            counter += 1
+        }
+
+        do {
+            try FileManager.default.copyItem(at: url, to: destinationURL)
+            editorStore.refreshFiles()
+            if !destinationURL.hasDirectoryPath {
+                editorStore.selectFile(at: destinationURL)
+            }
+        } catch {
+            editorStore.errorMessage = "Failed to duplicate: \(error.localizedDescription)"
+        }
+    }
+
+    private func handleDrop(urls: [URL], onto destinationURL: URL) {
+        dropTargetURL = nil
+
+        let destinationDirectory = destinationURL.hasDirectoryPath ? destinationURL : destinationURL.deletingLastPathComponent()
+
+        for sourceURL in urls {
+            // Don't move onto itself
+            guard sourceURL != destinationDirectory && sourceURL.deletingLastPathComponent() != destinationDirectory else { continue }
+
+            let newURL = destinationDirectory.appendingPathComponent(sourceURL.lastPathComponent)
+
+            // Handle duplicate names
+            if FileManager.default.fileExists(atPath: newURL.path) {
+                let alert = NSAlert()
+                alert.messageText = "\"\(newURL.lastPathComponent)\" already exists"
+                alert.informativeText = "Do you want to replace it?"
+                alert.alertStyle = .warning
+                alert.addButton(withTitle: "Replace")
+                alert.addButton(withTitle: "Skip")
+
+                if alert.runModal() == .alertFirstButtonReturn {
+                    // Remove existing and move
+                    try? FileManager.default.removeItem(at: newURL)
+                    _ = editorStore.moveItem(sourceURL, to: destinationDirectory)
+                }
+            } else {
+                _ = editorStore.moveItem(sourceURL, to: destinationDirectory)
+            }
+        }
     }
 
     @ViewBuilder

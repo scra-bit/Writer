@@ -59,8 +59,131 @@ final class EditorStore {
     private var autosaveTask: Task<Void, Never>?
     private var securityScopedAccessToken: Any?
 
+    // Clipboard for file operations
+    var clipboardItems: [URL] = []
+    var isClipboardCut = false
+
     init() {
         initializeRootURL()
+    }
+
+    // MARK: - File Operations
+
+    func copyItems(_ urls: [URL]) {
+        clipboardItems = urls
+        isClipboardCut = false
+    }
+
+    func cutItems(_ urls: [URL]) {
+        clipboardItems = urls
+        isClipboardCut = true
+    }
+
+    func pasteItems(to destinationDirectory: URL) {
+        guard !clipboardItems.isEmpty else { return }
+
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+
+        var newURLs: [URL] = []
+
+        for url in clipboardItems {
+            let destinationURL = destinationDirectory.appendingPathComponent(url.lastPathComponent)
+
+            do {
+                if isClipboardCut {
+                    try FileManager.default.moveItem(at: url, to: destinationURL)
+                } else {
+                    try FileManager.default.copyItem(at: url, to: destinationURL)
+                }
+                newURLs.append(destinationURL)
+            } catch {
+                errorMessage = "Failed to \(isClipboardCut ? "move" : "copy") \(url.lastPathComponent): \(error.localizedDescription)"
+            }
+        }
+
+        if isClipboardCut {
+            clipboardItems = []
+            isClipboardCut = false
+        }
+
+        refreshFiles()
+
+        // If we pasted a single file, select it
+        if newURLs.count == 1, let newFile = newURLs.first, !newFile.hasDirectoryPath {
+            selectFile(at: newFile)
+        }
+    }
+
+    func canPaste(into directory: URL) -> Bool {
+        guard !clipboardItems.isEmpty else { return false }
+        // Don't allow pasting into a location that would create a cycle or paste onto itself
+        return !clipboardItems.contains { item in
+            item == directory || directory.path.hasPrefix(item.path + "/")
+        }
+    }
+
+    func moveItem(_ sourceURL: URL, to destinationDirectory: URL) -> Bool {
+        let destinationURL = destinationDirectory.appendingPathComponent(sourceURL.lastPathComponent)
+
+        guard sourceURL != destinationURL else { return false }
+
+        do {
+            try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
+            refreshFiles()
+            return true
+        } catch {
+            errorMessage = "Failed to move \(sourceURL.lastPathComponent): \(error.localizedDescription)"
+            return false
+        }
+    }
+
+    func deleteItem(_ url: URL) {
+        let alert = NSAlert()
+        alert.messageText = "Delete \"\(url.lastPathComponent)\"?"
+        alert.informativeText = "This item will be moved to the trash."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "Move to Trash")
+        alert.addButton(withTitle: "Cancel")
+
+        if alert.runModal() == .alertFirstButtonReturn {
+            do {
+                try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+                if selectedFileURL == url {
+                    selectedFileURL = nil
+                    documentText = ""
+                    lastSavedText = ""
+                }
+                refreshFiles()
+            } catch {
+                errorMessage = "Failed to delete \(url.lastPathComponent): \(error.localizedDescription)"
+            }
+        }
+    }
+
+    func renameItem(_ url: URL, to newName: String) {
+        let trimmedName = newName.trimmingCharacters(in: .whitespaces)
+        guard !trimmedName.isEmpty, trimmedName != url.lastPathComponent else { return }
+
+        let newURL = url.deletingLastPathComponent().appendingPathComponent(trimmedName)
+
+        do {
+            try FileManager.default.moveItem(at: url, to: newURL)
+            if selectedFileURL == url {
+                selectedFileURL = newURL
+            }
+            refreshFiles()
+        } catch {
+            errorMessage = "Failed to rename \(url.lastPathComponent): \(error.localizedDescription)"
+        }
+    }
+
+    func revealInFinder(_ url: URL) {
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    func openFolder(_ url: URL) {
+        NSWorkspace.shared.open(url)
     }
 
     private func initializeRootURL() {
@@ -209,6 +332,17 @@ final class EditorStore {
             errorMessage = nil
         } catch {
             errorMessage = "Couldn't open \(url.lastPathComponent): \(error.localizedDescription)"
+        }
+    }
+
+    func selectItem(at url: URL, isDirectory: Bool) {
+        if isDirectory {
+            // For folders: just track as active directory, don't try to open
+            activeDirectoryURL = url
+            // Still update selection for UI highlighting
+            selectedFileURL = url
+        } else {
+            selectFile(at: url)
         }
     }
 
