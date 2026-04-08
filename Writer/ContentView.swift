@@ -8,8 +8,7 @@ import SwiftUI
 // HTMLExporter is defined in HTMLExporter.swift within the same module
 
 struct ContentView: View {
-    @State private var showNewFileSheet = false
-    @State private var newFileName = ""
+    @State private var creationName = ""
     @Environment(EditorStore.self) private var editorStore
     @State private var showPreview = true
     @Environment(ThemeStore.self) private var themeStore
@@ -39,6 +38,9 @@ struct ContentView: View {
         .onChange(of: editorStore.documentText) { _, _ in
             editorStore.scheduleAutosave()
         }
+        .sheet(item: Bindable(editorStore).pendingCreation) { creation in
+            creationSheet(for: creation)
+        }
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button(action: { showPreview.toggle() }) {
@@ -67,8 +69,8 @@ struct ContentView: View {
     private var sidebar: some View {
         List(selection: selectedFileBinding) {
             Section(editorStore.rootURL?.lastPathComponent ?? "Files") {
-                OutlineGroup(editorStore.fileTree, children: \.children) { node in
-                    sidebarRow(for: node)
+                ForEach(editorStore.fileTree) { node in
+                    sidebarNodeRow(for: node)
                 }
             }
         }
@@ -80,18 +82,6 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
                     .padding(12)
             }
-        }
-        .safeAreaInset(edge: .bottom) {
-            Button(action: { showNewFileSheet = true }) {
-                Label("New File", systemImage: "plus")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(10)
-            }
-            .buttonStyle(.plain)
-            .background(.bar)
-        }
-        .sheet(isPresented: $showNewFileSheet) {
-            newFileSheet
         }
     }
 
@@ -111,34 +101,48 @@ struct ContentView: View {
         )
     }
     
-    private var newFileSheet: some View {
+    @ViewBuilder
+    private func creationSheet(for creation: EditorStore.PendingCreation) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("New File")
+            Text(creation == .file ? "New File" : "New Folder")
                 .font(.headline)
 
-            TextField("File name", text: $newFileName)
+            TextField(creation == .file ? "File name" : "Folder name", text: $creationName)
                 .textFieldStyle(.roundedBorder)
 
-            Text("Plain Text (.txt)")
-                .foregroundStyle(.secondary)
+            if creation == .file {
+                Text("Plain Text (.txt)")
+                    .foregroundStyle(.secondary)
+            }
+
+            if let targetDirectory = editorStore.newFileDirectoryURL {
+                Text("Create in \(targetDirectory.path)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
 
             HStack {
                 Button("Cancel") {
-                    showNewFileSheet = false
-                    newFileName = ""
+                    editorStore.pendingCreation = nil
+                    creationName = ""
                 }
                 .keyboardShortcut(.escape, modifiers: [])
 
                 Spacer()
 
                 Button("Create") {
-                    editorStore.createFile(named: newFileName, extension: "txt")
-                    showNewFileSheet = false
-                    newFileName = ""
+                    if creation == .file {
+                        editorStore.createFile(named: creationName, extension: "txt")
+                    } else {
+                        editorStore.createFolder(named: creationName)
+                    }
+                    editorStore.pendingCreation = nil
+                    creationName = ""
                 }
                 .keyboardShortcut(.return, modifiers: [])
                 .buttonStyle(.borderedProminent)
-                .disabled(newFileName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(creationName.trimmingCharacters(in: .whitespaces).isEmpty)
             }
         }
         .padding(24)
@@ -152,6 +156,36 @@ struct ContentView: View {
                 guard let newValue else { return }
                 editorStore.selectFile(at: newValue)
             }
+        )
+    }
+
+    private func sidebarNodeRow(for node: EditorStore.FileNode) -> AnyView {
+        if node.isDirectory {
+            return AnyView(
+                DisclosureGroup(
+                    isExpanded: Binding(
+                        get: { editorStore.isExpanded(node.url) },
+                        set: { _ in editorStore.toggleExpansion(for: node.url) }
+                    )
+                ) {
+                    if let children = node.children {
+                        ForEach(children) { childNode in
+                            sidebarNodeRow(for: childNode)
+                        }
+                    }
+                } label: {
+                    Label(node.name, systemImage: "folder")
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            editorStore.toggleExpansion(for: node.url)
+                        }
+                }
+            )
+        }
+
+        return AnyView(
+            Label(node.name, systemImage: "doc.text")
+                .tag(Optional(node.url))
         )
     }
 

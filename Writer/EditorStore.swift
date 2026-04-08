@@ -14,6 +14,13 @@ private enum BookmarkKeys {
 @MainActor
 @Observable
 final class EditorStore {
+    enum PendingCreation: String, Identifiable {
+        case file
+        case folder
+
+        var id: String { rawValue }
+    }
+
     struct FileNode: Identifiable, Hashable {
         let url: URL
         let isDirectory: Bool
@@ -26,9 +33,27 @@ final class EditorStore {
     private(set) var rootURL: URL?
 
     var fileTree: [FileNode] = []
+    private var expandedIDs: Set<URL> = []
+    private var activeDirectoryURL: URL?
+
+    func toggleExpansion(for url: URL) {
+        activeDirectoryURL = url
+
+        if expandedIDs.contains(url) {
+            expandedIDs.remove(url)
+        } else {
+            expandedIDs.insert(url)
+        }
+    }
+
+    func isExpanded(_ url: URL) -> Bool {
+        expandedIDs.contains(url)
+    }
+
     var selectedFileURL: URL?
     var documentText = ""
     var errorMessage: String?
+    var pendingCreation: PendingCreation?
 
     private var lastSavedText = ""
     private var autosaveTask: Task<Void, Never>?
@@ -112,6 +137,18 @@ final class EditorStore {
         selectedFileURL?.lastPathComponent ?? "Writer"
     }
 
+    var newFileDirectoryURL: URL? {
+        if let activeDirectoryURL, containsDirectory(at: activeDirectoryURL, in: fileTree) {
+            return activeDirectoryURL
+        }
+
+        if let selectedFileURL {
+            return selectedFileURL.deletingLastPathComponent()
+        }
+
+        return rootURL
+    }
+
     func refreshFiles() {
         guard let rootURL else {
             fileTree = []
@@ -145,6 +182,10 @@ final class EditorStore {
                 documentText = ""
                 lastSavedText = ""
             }
+
+            if let activeDirectoryURL, !containsDirectory(at: activeDirectoryURL, in: fileTree) {
+                self.activeDirectoryURL = nil
+            }
         } catch {
             fileTree = []
             selectedFileURL = nil
@@ -162,6 +203,7 @@ final class EditorStore {
         do {
             let text = try String(contentsOf: url, encoding: .utf8)
             selectedFileURL = url
+            activeDirectoryURL = url.deletingLastPathComponent()
             documentText = text
             lastSavedText = text
             errorMessage = nil
@@ -198,7 +240,7 @@ final class EditorStore {
     }
     
     func createFile(named name: String, extension ext: String) {
-        guard let rootURL else {
+        guard let targetDirectoryURL = newFileDirectoryURL else {
             errorMessage = "No folder selected."
             return
         }
@@ -206,7 +248,7 @@ final class EditorStore {
         var fileName = name.trimmingCharacters(in: .whitespaces)
         if fileName.isEmpty { fileName = "Untitled" }
 
-        let fileURL = rootURL.appendingPathComponent("\(fileName).\(ext)")
+        let fileURL = targetDirectoryURL.appendingPathComponent("\(fileName).\(ext)")
 
         do {
             try "".write(to: fileURL, atomically: true, encoding: .utf8)
@@ -214,6 +256,28 @@ final class EditorStore {
             selectFile(at: fileURL)
         } catch {
             errorMessage = "Couldn't create file: \(error.localizedDescription)"
+        }
+    }
+
+    func createFolder(named name: String) {
+        guard let targetDirectoryURL = newFileDirectoryURL else {
+            errorMessage = "No folder selected."
+            return
+        }
+
+        var folderName = name.trimmingCharacters(in: .whitespaces)
+        if folderName.isEmpty { folderName = "Untitled Folder" }
+
+        let folderURL = targetDirectoryURL.appendingPathComponent(folderName, isDirectory: true)
+
+        do {
+            try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: false)
+            activeDirectoryURL = folderURL
+            refreshFiles()
+            expandedIDs.insert(folderURL)
+            errorMessage = nil
+        } catch {
+            errorMessage = "Couldn't create folder: \(error.localizedDescription)"
         }
     }
 
@@ -288,6 +352,16 @@ final class EditorStore {
             }
 
             return containsFile(at: url, in: node.children ?? [])
+        }
+    }
+
+    private func containsDirectory(at url: URL, in nodes: [FileNode]) -> Bool {
+        nodes.contains { node in
+            if node.url == url {
+                return node.isDirectory
+            }
+
+            return containsDirectory(at: url, in: node.children ?? [])
         }
     }
 }

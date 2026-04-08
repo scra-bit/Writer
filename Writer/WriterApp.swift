@@ -52,7 +52,19 @@ struct WriterApp: App {
         .defaultSize(width: 1200, height: 760)
         .restorationBehavior(.disabled)
         .commands {
-            CommandGroup(replacing: .newItem) {}
+            CommandGroup(replacing: .newItem) {
+                Button("New File") {
+                    editorStore.pendingCreation = .file
+                }
+                .keyboardShortcut("n", modifiers: [.command])
+                .disabled(editorStore.newFileDirectoryURL == nil)
+
+                Button("New Folder") {
+                    editorStore.pendingCreation = .folder
+                }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+                .disabled(editorStore.newFileDirectoryURL == nil)
+            }
             CommandMenu("File") {
                 Button("Export to HTML") {
                     exportToHTML()
