@@ -110,6 +110,14 @@ struct WriterApp: App {
                 }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
                 .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
+
+                Divider()
+
+                Button("Format Tables") {
+                    editorStore.formatAllTables()
+                }
+                .keyboardShortcut("f", modifiers: [.command, .shift])
+                .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
             }
         }
     }

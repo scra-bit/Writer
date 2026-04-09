@@ -373,6 +373,11 @@ final class EditorStore {
         }
     }
     
+    func formatAllTables() {
+        let formatter = TableFormatter()
+        documentText = formatter.formatEntireDocument(documentText)
+    }
+    
     func createFile(named name: String, extension ext: String) {
         guard let targetDirectoryURL = newFileDirectoryURL else {
             errorMessage = "No folder selected."
