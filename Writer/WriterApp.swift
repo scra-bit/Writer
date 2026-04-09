@@ -25,6 +25,32 @@ struct WriterApp: App {
         }
     }
 
+    private func exportToPDF() {
+        let exporter = PDFExporter(markdown: editorStore.documentText, theme: themeStore.previewTheme)
+        let suggestedName = (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document") + ".pdf"
+        Task {
+            do {
+                let url = try await exporter.save(suggestedName: suggestedName)
+                exportSuccess = url.path
+            } catch let error as any Error where (error as NSError).code != NSUserCancelledError {
+                exportError = error.localizedDescription
+            }
+        }
+    }
+
+    private func exportToRTF() {
+        let exporter = RTFExporter(markdown: editorStore.documentText, theme: themeStore.previewTheme)
+        let suggestedName = (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document") + ".rtf"
+        Task {
+            do {
+                let url = try await exporter.save(suggestedName: suggestedName)
+                exportSuccess = url.path
+            } catch let error as any Error where (error as NSError).code != NSUserCancelledError {
+                exportError = error.localizedDescription
+            }
+        }
+    }
+
     var body: some Scene {
         Window("Writer", id: "main") {
             ContentView()
@@ -71,6 +97,18 @@ struct WriterApp: App {
                     exportToHTML()
                 }
                 .keyboardShortcut("e", modifiers: [.command, .shift])
+                .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
+
+                Button("Export to PDF") {
+                    exportToPDF()
+                }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
+
+                Button("Export to RTF") {
+                    exportToRTF()
+                }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
                 .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
             }
         }
