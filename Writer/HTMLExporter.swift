@@ -10,61 +10,9 @@ struct HTMLExporter {
     
     /// Generates a complete standalone HTML document with inline CSS
     func generateHTML() -> String {
-        let bodyContent = renderBodyContent(markdown)
-        return wrapInHTMLDocument(bodyContent)
-    }
-    
-    /// Renders markdown to HTML body content
-    private func renderBodyContent(_ markdown: String) -> String {
-        let escaped = escapeHTMLEntities(markdown)
-        
-        let document = Document(parsing: escaped)
-        var visitor = HTMLVisitor()
-        var html = document.accept(&visitor)
-        
-        // Process custom ==highlight== syntax
-        html = processHighlights(html)
-        
-        return html
-    }
-    
-    /// Escapes HTML special characters
-    private func escapeHTMLEntities(_ text: String) -> String {
-        text
-            .replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-    }
-    
-    /// Processes custom ==highlight== syntax
-    private func processHighlights(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: "==(.+?)==", options: []) else {
-            return text
-        }
-        return regex.stringByReplacingMatches(
-            in: text,
-            options: [],
-            range: NSRange(text.startIndex..., in: text),
-            withTemplate: "<mark class=\"highlight\">$1</mark>"
-        )
-    }
-    
-    /// Wraps content in complete HTML document with inline CSS
-    private func wrapInHTMLDocument(_ bodyContent: String) -> String {
-        """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-        \(theme.cssStyles)
-            </style>
-        </head>
-        <body>
-            \(bodyContent)
-        </body>
-        </html>
-        """
+        let renderer = MarkdownRenderer()
+        let bodyContent = renderer.renderBodyContent(markdown)
+        return renderer.wrapInHTMLDocument(bodyContent, theme: theme)
     }
     
     /// Presents save panel and writes HTML to selected location
