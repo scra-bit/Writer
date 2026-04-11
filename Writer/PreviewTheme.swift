@@ -66,8 +66,88 @@ extension PreviewTheme {
         secondaryTextColor: "#525252" // neutral-600 equivalent
     )
 
+    // Cream Theme - Like an old book page, warm and readable
+    static let cream = PreviewTheme(
+        name: "Cream",
+        bodyFontFamily: "Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif",
+        headingFontFamily: "Charter, 'Bitstream Charter', 'Sitka Text', Cambria, serif",
+        codeFontFamily: "'SF Mono', Menlo, Monaco, monospace",
+        baseFontSize: 17,
+        lineHeight: 1.7,
+        backgroundColor: "#fdf6e3",
+        textColor: "#3d3529",
+        linkColor: "#6b4c1e",
+        codeBackgroundColor: "#efe6d5",
+        borderColor: "#d4c9b0",
+        secondaryTextColor: "#6b5d4a"
+    )
+
+    // Slate Theme - Clean document like a newspaper or magazine
+    static let slate = PreviewTheme(
+        name: "Slate",
+        bodyFontFamily: "'Newsreader', 'Iowan Old Style', Georgia, serif",
+        headingFontFamily: "'Newsreader', 'Iowan Old Style', Georgia, serif",
+        codeFontFamily: "'SF Mono', Menlo, Monaco, monospace",
+        baseFontSize: 16,
+        lineHeight: 1.6,
+        backgroundColor: "#f8f9fa",
+        textColor: "#212529",
+        linkColor: "#0d6efd",
+        codeBackgroundColor: "#e9ecef",
+        borderColor: "#dee2e6",
+        secondaryTextColor: "#6c757d"
+    )
+
+    // Sepia Theme - Like an aged manuscript
+    static let sepia = PreviewTheme(
+        name: "Sepia",
+        bodyFontFamily: "'Crimson Pro', 'Crimson Text', Georgia, serif",
+        headingFontFamily: "'Crimson Pro', 'Crimson Text', Georgia, serif",
+        codeFontFamily: "'SF Mono', Menlo, Monaco, monospace",
+        baseFontSize: 18,
+        lineHeight: 1.7,
+        backgroundColor: "#f4ecd8",
+        textColor: "#5c4b37",
+        linkColor: "#8b5a2b",
+        codeBackgroundColor: "#e8dfc7",
+        borderColor: "#c9bca0",
+        secondaryTextColor: "#7a6b52"
+    )
+
+    // Notebook Theme - Like a spiral notebook with faint lines
+    static let notebook = PreviewTheme(
+        name: "Notebook",
+        bodyFontFamily: "'Refrigerator', 'Charter', Georgia, serif",
+        headingFontFamily: "'Refrigerator', 'Charter', Georgia, serif",
+        codeFontFamily: "'SF Mono', Menlo, Monaco, monospace",
+        baseFontSize: 15,
+        lineHeight: 1.8,
+        backgroundColor: "#fffef7",
+        textColor: "#2c2c2c",
+        linkColor: "#2563eb",
+        codeBackgroundColor: "#f0f0e8",
+        borderColor: "#e5e5db",
+        secondaryTextColor: "#6b6b6b"
+    )
+
+    // Modern Theme - Clean editorial magazine style
+    static let modern = PreviewTheme(
+        name: "Modern",
+        bodyFontFamily: "'Söhne', 'SF Pro Text', -apple-system, sans-serif",
+        headingFontFamily: "'Söhne Breit', 'SF Pro Display', -apple-system, sans-serif",
+        codeFontFamily: "'SF Mono', Menlo, monospace",
+        baseFontSize: 15,
+        lineHeight: 1.65,
+        backgroundColor: "#ffffff",
+        textColor: "#111111",
+        linkColor: "#000000",
+        codeBackgroundColor: "#f5f5f5",
+        borderColor: "#e0e0e0",
+        secondaryTextColor: "#555555"
+    )
+
     // All available themes
-    static let allThemes: [PreviewTheme] = [.sansSerif, .serif, .lightTheme]
+    static let allThemes: [PreviewTheme] = [.sansSerif, .serif, .lightTheme, .cream, .slate, .sepia, .notebook, .modern]
 }
 
 extension PreviewTheme {

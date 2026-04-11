@@ -10,8 +10,8 @@ import SwiftUI
 struct ContentView: View {
     @State private var creationName = ""
     @Environment(EditorStore.self) private var editorStore
-    @State private var showPreview = false
     @Environment(ThemeStore.self) private var themeStore
+    @Environment(LayoutStore.self) private var layoutStore
     @State private var renamingURL: URL?
     @State private var renamingText = ""
     @State private var dropTargetURL: URL?
@@ -24,20 +24,8 @@ struct ContentView: View {
             Group {
                 if editorStore.selectedFileURL == nil {
                     Text("No file found. Sorry.")
-
                 } else {
-                    if showPreview {
-                        HSplitView {
-                            editorView
-                                .frame(minWidth: 280)
-                            WebView(
-                                markdown: editorStore.documentText, theme: themeStore.previewTheme
-                            )
-                            .frame(minWidth: 280)
-                        }
-                    } else {
-                        editorView
-                    }
+                    layoutContainer
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -56,12 +44,12 @@ struct ContentView: View {
         }
         .toolbar {
             ToolbarItem {
-                Button(action: { showPreview.toggle() }) {
+                Button(action: { layoutStore.showPreview.toggle() }) {
                     Image(
-                        systemName: showPreview
+                        systemName: layoutStore.showPreview
                             ? "arrowtriangle.forward.square.fill" : "arrowtriangle.forward.square")
                 }
-                .help(showPreview ? "Hide Preview" : "Show Preview")
+                .help(layoutStore.showPreview ? "Hide Preview" : "Show Preview")
                 .keyboardShortcut("p", modifiers: [.command])
             }
 
@@ -150,6 +138,24 @@ struct ContentView: View {
             .lineSpacing(3)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(.horizontal, 24)
+    }
+
+    private var layoutContainer: some View {
+        HSplitView {
+            editorView
+                .frame(minWidth: 280)
+            previewContainer
+                .frame(minWidth: layoutStore.showPreview ? 280 : 0)
+                .frame(maxWidth: layoutStore.showPreview ? .infinity : 0)
+        }
+    }
+
+    private var previewContainer: some View {
+        WebView(
+            markdown: editorStore.documentText, theme: themeStore.previewTheme
+        )
+        .opacity(layoutStore.showPreview ? 1 : 0)
+        .disabled(!layoutStore.showPreview)
     }
 
     private var emptyStateView: some View {

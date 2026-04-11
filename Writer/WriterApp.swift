@@ -9,9 +9,9 @@ import SwiftUI
 struct WriterApp: App {
     @State private var editorStore = EditorStore()
     @State private var themeStore = ThemeStore()
+    @State private var layoutStore = LayoutStore()
     @State private var exportError: String? = nil
     @State private var exportSuccess: String? = nil
-    @State private var showPreview = true
 
     private func exportToHTML() {
         let exporter = HTMLExporter(
@@ -66,6 +66,7 @@ struct WriterApp: App {
             ContentView()
                 .environment(editorStore)
                 .environment(themeStore)
+                .environment(layoutStore)
                 .alert(
                     "Export Error",
                     isPresented: Binding(
@@ -133,10 +134,10 @@ struct WriterApp: App {
                 .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
             }
             CommandMenu("View") {
-                Button("Show/Hide Preview ") {
-                    showPreview.toggle()
+                Button("Show/Hide Preview") {
+                    layoutStore.showPreview.toggle()
                 }
-
+                .keyboardShortcut("p", modifiers: [.command, .option])
             }
         }
     }
