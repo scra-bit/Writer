@@ -37,7 +37,7 @@ final class ThemeStore {
 
     var preset: Preset = .default
     var baseFontSize: Double = 16
-    var previewTheme: PreviewTheme = .lightTheme
+    var previewTheme: PreviewTheme = .sansSerif
 
     var font: Font {
         .system(size: baseFontSize)
