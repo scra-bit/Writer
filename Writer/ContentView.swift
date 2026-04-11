@@ -32,7 +32,7 @@ struct ContentView: View {
                             .frame(minWidth: 280)
                     }
                 } else {
-                    editorView
+                    editorView 
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -52,7 +52,7 @@ struct ContentView: View {
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button(action: { showPreview.toggle() }) {
-                    Image(systemName: showPreview ? "sidebar.left" : "sidebar.right")
+                    Image(systemName: showPreview ? "arrow.right" : "arrow.left")
                 }
                 .help(showPreview ? "Hide Preview" : "Show Preview")
             }

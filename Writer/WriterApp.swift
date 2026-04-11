@@ -11,6 +11,7 @@ struct WriterApp: App {
     @State private var themeStore = ThemeStore()
     @State private var exportError: String? = nil
     @State private var exportSuccess: String? = nil
+    @State private var showPreview = true
 
     private func exportToHTML() {
         let exporter = HTMLExporter(markdown: editorStore.documentText, theme: themeStore.previewTheme)
@@ -118,6 +119,14 @@ struct WriterApp: App {
                 }
                 .keyboardShortcut("f", modifiers: [.command, .shift])
                 .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
+            }
+            CommandMenu("View") {
+                Button("Show/Hide Preview ") {
+                    showPreview.toggle()
+                }
+                .keyboardShortcut("p", modifiers: [.command])
+                
+                
             }
         }
     }
