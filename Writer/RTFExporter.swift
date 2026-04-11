@@ -1,7 +1,6 @@
 import Foundation
 import AppKit
 import UniformTypeIdentifiers
-import Markdown
 
 /// Utility for exporting markdown documents as Rich Text Format (RTF) files
 /// Converts HTML to NSAttributedString and writes as RTF
@@ -14,7 +13,9 @@ struct RTFExporter {
     /// - Parameter suggestedName: Default filename suggestion
     /// - Returns: URL of saved file
     func save(suggestedName: String = "document.rtf") async throws -> URL {
-        let html = generateHTML()
+        let renderer = MarkdownRenderer()
+        let bodyContent = renderer.renderBodyContent(markdown)
+        let html = renderer.wrapInHTMLDocument(bodyContent, theme: theme)
 
         // Present save panel
         let savePanel = NSSavePanel()
@@ -58,64 +59,5 @@ struct RTFExporter {
         ]
 
         return try? NSAttributedString(data: data, options: options, documentAttributes: nil)
-    }
-
-    /// Generates complete HTML document with inline CSS
-    private func generateHTML() -> String {
-        let bodyContent = renderBodyContent(markdown)
-        return wrapInHTMLDocument(bodyContent)
-    }
-
-    /// Renders markdown to HTML body content
-    private func renderBodyContent(_ markdown: String) -> String {
-        let escaped = escapeHTMLEntities(markdown)
-
-        let document = Document(parsing: escaped)
-        var visitor = HTMLVisitor()
-        var html = document.accept(&visitor)
-
-        // Process custom ==highlight== syntax
-        html = processHighlights(html)
-
-        return html
-    }
-
-    /// Escapes HTML special characters
-    private func escapeHTMLEntities(_ text: String) -> String {
-        text
-            .replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-    }
-
-    /// Processes custom ==highlight== syntax
-    private func processHighlights(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: "==(.+?)==", options: []) else {
-            return text
-        }
-        return regex.stringByReplacingMatches(
-            in: text,
-            options: [],
-            range: NSRange(text.startIndex..., in: text),
-            withTemplate: "<mark class=\"highlight\">$1</mark>"
-        )
-    }
-
-    /// Wraps content in complete HTML document with inline CSS
-    private func wrapInHTMLDocument(_ bodyContent: String) -> String {
-        """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-        \(theme.cssStyles)
-            </style>
-        </head>
-        <body>
-            \(bodyContent)
-        </body>
-        </html>
-        """
     }
 }
