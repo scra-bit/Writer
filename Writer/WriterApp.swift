@@ -14,8 +14,11 @@ struct WriterApp: App {
     @State private var showPreview = true
 
     private func exportToHTML() {
-        let exporter = HTMLExporter(markdown: editorStore.documentText, theme: themeStore.previewTheme)
-        let suggestedName = (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document") + ".html"
+        let exporter = HTMLExporter(
+            markdown: editorStore.documentText, theme: themeStore.previewTheme)
+        let suggestedName =
+            (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document")
+            + ".html"
         Task {
             do {
                 let url = try await exporter.save(suggestedName: suggestedName)
@@ -27,8 +30,11 @@ struct WriterApp: App {
     }
 
     private func exportToPDF() {
-        let exporter = PDFExporter(markdown: editorStore.documentText, theme: themeStore.previewTheme)
-        let suggestedName = (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document") + ".pdf"
+        let exporter = PDFExporter(
+            markdown: editorStore.documentText, theme: themeStore.previewTheme)
+        let suggestedName =
+            (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document")
+            + ".pdf"
         Task {
             do {
                 let url = try await exporter.save(suggestedName: suggestedName)
@@ -40,8 +46,11 @@ struct WriterApp: App {
     }
 
     private func exportToRTF() {
-        let exporter = RTFExporter(markdown: editorStore.documentText, theme: themeStore.previewTheme)
-        let suggestedName = (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document") + ".rtf"
+        let exporter = RTFExporter(
+            markdown: editorStore.documentText, theme: themeStore.previewTheme)
+        let suggestedName =
+            (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document")
+            + ".rtf"
         Task {
             do {
                 let url = try await exporter.save(suggestedName: suggestedName)
@@ -57,10 +66,13 @@ struct WriterApp: App {
             ContentView()
                 .environment(editorStore)
                 .environment(themeStore)
-                .alert("Export Error", isPresented: Binding(
-                    get: { exportError != nil },
-                    set: { if !$0 { exportError = nil } }
-                )) {
+                .alert(
+                    "Export Error",
+                    isPresented: Binding(
+                        get: { exportError != nil },
+                        set: { if !$0 { exportError = nil } }
+                    )
+                ) {
                     Button("OK") {
                         exportError = nil
                     }
@@ -124,9 +136,7 @@ struct WriterApp: App {
                 Button("Show/Hide Preview ") {
                     showPreview.toggle()
                 }
-                .keyboardShortcut("p", modifiers: [.command])
-                
-                
+
             }
         }
     }

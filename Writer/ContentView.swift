@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var creationName = ""
     @Environment(EditorStore.self) private var editorStore
-    @State private var showPreview = true
+    @State private var showPreview = false
     @Environment(ThemeStore.self) private var themeStore
     @State private var renamingURL: URL?
     @State private var renamingText = ""
@@ -23,16 +23,21 @@ struct ContentView: View {
         } detail: {
             Group {
                 if editorStore.selectedFileURL == nil {
-                    emptyStateView
-                } else if showPreview {
-                    HSplitView {
-                        editorView
-                            .frame(minWidth: 280)
-                        WebView(markdown: editorStore.documentText, theme: themeStore.previewTheme)
-                            .frame(minWidth: 280)
-                    }
+                    Text("No file found. Sorry.")
+
                 } else {
-                    editorView 
+                    if showPreview {
+                        HSplitView {
+                            editorView
+                                .frame(minWidth: 280)
+                            WebView(
+                                markdown: editorStore.documentText, theme: themeStore.previewTheme
+                            )
+                            .frame(minWidth: 280)
+                        }
+                    } else {
+                        editorView
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -50,11 +55,14 @@ struct ContentView: View {
             creationSheet(for: creation)
         }
         .toolbar {
-            ToolbarItem(placement: .navigation) {
+            ToolbarItem {
                 Button(action: { showPreview.toggle() }) {
-                    Image(systemName: showPreview ? "arrow.right" : "arrow.left")
+                    Image(
+                        systemName: showPreview
+                            ? "arrowtriangle.forward.square.fill" : "arrowtriangle.forward.square")
                 }
                 .help(showPreview ? "Hide Preview" : "Show Preview")
+                .keyboardShortcut("p", modifiers: [.command])
             }
 
             ToolbarItem {
@@ -148,10 +156,11 @@ struct ContentView: View {
         ContentUnavailableView(
             "No File Selected",
             systemImage: "doc.text",
-            description: Text("Choose a text or markdown file from \(editorStore.rootURL?.path ?? "folder").")
+            description: Text(
+                "Choose a text or markdown file from \(editorStore.rootURL?.path ?? "folder").")
         )
     }
-    
+
     @ViewBuilder
     private func creationSheet(for creation: EditorStore.PendingCreation) -> some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -268,7 +277,9 @@ struct ContentView: View {
     // MARK: - Labels and Views
 
     @ViewBuilder
-    private func folderLabel(for node: EditorStore.FileNode, isRenaming: Bool, isDropTarget: Bool) -> some View {
+    private func folderLabel(for node: EditorStore.FileNode, isRenaming: Bool, isDropTarget: Bool)
+        -> some View
+    {
         if isRenaming {
             renamingField(for: node)
         } else {
@@ -471,11 +482,16 @@ struct ContentView: View {
     private func handleDrop(urls: [URL], onto destinationURL: URL) {
         dropTargetURL = nil
 
-        let destinationDirectory = destinationURL.hasDirectoryPath ? destinationURL : destinationURL.deletingLastPathComponent()
+        let destinationDirectory =
+            destinationURL.hasDirectoryPath
+            ? destinationURL : destinationURL.deletingLastPathComponent()
 
         for sourceURL in urls {
             // Don't move onto itself
-            guard sourceURL != destinationDirectory && sourceURL.deletingLastPathComponent() != destinationDirectory else { continue }
+            guard
+                sourceURL != destinationDirectory
+                    && sourceURL.deletingLastPathComponent() != destinationDirectory
+            else { continue }
 
             let newURL = destinationDirectory.appendingPathComponent(sourceURL.lastPathComponent)
 
