@@ -105,13 +105,26 @@ class MarkdownTextViewInternal: NSTextView {
 
         // Reset to default attributes
         let baseFont = font ?? NSFont.monospacedSystemFont(ofSize: 16, weight: .regular)
+        let spaceWidth = (" " as NSString).size(withAttributes: [.font: baseFont]).width
+        let bodyTextHeadIndent = 4 * spaceWidth
+        let baseParagraphStyle = NSMutableParagraphStyle()
+        baseParagraphStyle.lineSpacing = 3
+        baseParagraphStyle.headIndent = bodyTextHeadIndent
+        baseParagraphStyle.firstLineHeadIndent = bodyTextHeadIndent
         textStorage.removeAttribute(.foregroundColor, range: fullRange)
         textStorage.removeAttribute(.font, range: fullRange)
         textStorage.removeAttribute(.backgroundColor, range: fullRange)
+        textStorage.removeAttribute(.paragraphStyle, range: fullRange)
         textStorage.addAttribute(.font, value: baseFont, range: fullRange)
+        textStorage.addAttribute(.paragraphStyle, value: baseParagraphStyle, range: fullRange)
 
         // Apply heading styles (# Heading)
-        applyHeadingStyles(to: textStorage, text: text, baseFont: baseFont)
+        applyHeadingStyles(
+            to: textStorage,
+            text: text,
+            baseFont: baseFont,
+            baseParagraphStyle: baseParagraphStyle
+        )
 
         // Apply bold styles (**bold** or __bold__)
         applyBoldStyles(to: textStorage, text: text, baseFont: baseFont)
@@ -123,15 +136,57 @@ class MarkdownTextViewInternal: NSTextView {
         applyHighlightStyles(to: textStorage, text: text)
     }
 
-    private func applyHeadingStyles(to textStorage: NSTextStorage, text: String, baseFont: NSFont) {
+    private func applyHeadingStyles(
+        to textStorage: NSTextStorage,
+        text: String,
+        baseFont: NSFont,
+        baseParagraphStyle: NSParagraphStyle
+    ) {
         let headingPattern = "^#{1,6}\\s+.+$"
         guard let regex = try? NSRegularExpression(pattern: headingPattern, options: [.anchorsMatchLines]) else { return }
 
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+        let nsText = text as NSString
+        let boldFont = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold)
+        let bodyTextHeadIndent = baseParagraphStyle.headIndent
+        let spaceWidth = bodyTextHeadIndent / 4
 
         for match in matches {
-            let boldFont = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold)
+            let paragraphRange = nsText.paragraphRange(for: match.range)
+            let headingLevel = headingLevel(for: match.range, in: nsText)
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.setParagraphStyle(baseParagraphStyle)
+            paragraphStyle.headIndent = bodyTextHeadIndent
+            paragraphStyle.firstLineHeadIndent = headingMarkerFirstLineHeadIndent(
+                for: headingLevel,
+                bodyTextHeadIndent: bodyTextHeadIndent,
+                spaceWidth: spaceWidth
+            )
+
             textStorage.addAttribute(.font, value: boldFont, range: match.range)
+            textStorage.addAttribute(.paragraphStyle, value: paragraphStyle, range: paragraphRange)
+        }
+    }
+
+    private func headingLevel(for range: NSRange, in text: NSString) -> Int {
+        let line = text.substring(with: range)
+        return line.prefix(while: { $0 == "#" }).count
+    }
+
+    private func headingMarkerFirstLineHeadIndent(
+        for level: Int,
+        bodyTextHeadIndent: CGFloat,
+        spaceWidth: CGFloat
+    ) -> CGFloat {
+        switch level {
+        case 1:
+            return bodyTextHeadIndent - (2 * spaceWidth)
+        case 2:
+            return bodyTextHeadIndent - (3 * spaceWidth)
+        case 3...6:
+            return bodyTextHeadIndent - (4 * spaceWidth)
+        default:
+            return 0
         }
     }
 
