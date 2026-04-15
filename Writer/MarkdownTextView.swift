@@ -31,10 +31,7 @@ struct MarkdownTextView: NSViewRepresentable {
         textView.textContainerInset = NSSize(width: 24, height: 12)
         textView.textContainer?.lineFragmentPadding = 0
 
-        // Set default paragraph style with line spacing
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.lineSpacing = 3
-        textView.defaultParagraphStyle = paragraphStyle
+        textView.applyBaseTypingAttributes()
 
         // Set the text view as the document view
         scrollView.documentView = textView
@@ -87,6 +84,11 @@ struct MarkdownTextView: NSViewRepresentable {
 class MarkdownTextViewInternal: NSTextView {
     private var isApplyingStyling = false
 
+    override func insertNewline(_ sender: Any?) {
+        super.insertNewline(sender)
+        applyBaseTypingAttributes()
+    }
+
     override func didChangeText() {
         super.didChangeText()
         if !isApplyingStyling {
@@ -105,12 +107,7 @@ class MarkdownTextViewInternal: NSTextView {
 
         // Reset to default attributes
         let baseFont = font ?? NSFont.monospacedSystemFont(ofSize: 16, weight: .regular)
-        let spaceWidth = (" " as NSString).size(withAttributes: [.font: baseFont]).width
-        let bodyTextHeadIndent = 4 * spaceWidth
-        let baseParagraphStyle = NSMutableParagraphStyle()
-        baseParagraphStyle.lineSpacing = 3
-        baseParagraphStyle.headIndent = bodyTextHeadIndent
-        baseParagraphStyle.firstLineHeadIndent = bodyTextHeadIndent
+        let baseParagraphStyle = baseParagraphStyle(for: baseFont)
         textStorage.removeAttribute(.foregroundColor, range: fullRange)
         textStorage.removeAttribute(.font, range: fullRange)
         textStorage.removeAttribute(.backgroundColor, range: fullRange)
@@ -134,6 +131,8 @@ class MarkdownTextViewInternal: NSTextView {
 
         // Apply highlight styles (==highlight==)
         applyHighlightStyles(to: textStorage, text: text)
+
+        applyBaseTypingAttributes()
     }
 
     private func applyHeadingStyles(
@@ -188,6 +187,24 @@ class MarkdownTextViewInternal: NSTextView {
         default:
             return 0
         }
+    }
+
+    private func baseParagraphStyle(for font: NSFont) -> NSMutableParagraphStyle {
+        let spaceWidth = (" " as NSString).size(withAttributes: [.font: font]).width
+        let bodyTextHeadIndent = 4 * spaceWidth
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.lineSpacing = 3
+        paragraphStyle.headIndent = bodyTextHeadIndent
+        paragraphStyle.firstLineHeadIndent = bodyTextHeadIndent
+        return paragraphStyle
+    }
+
+    func applyBaseTypingAttributes() {
+        let baseFont = font ?? NSFont.monospacedSystemFont(ofSize: 16, weight: .regular)
+        let paragraphStyle = baseParagraphStyle(for: baseFont)
+        defaultParagraphStyle = paragraphStyle
+        typingAttributes[.font] = baseFont
+        typingAttributes[.paragraphStyle] = paragraphStyle
     }
 
     private func applyBoldStyles(to textStorage: NSTextStorage, text: String, baseFont: NSFont) {
