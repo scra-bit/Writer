@@ -133,11 +133,8 @@ struct ContentView: View {
     }
 
     private var editorView: some View {
-        TextEditor(text: Bindable(editorStore).documentText)
-            .font(.system(size: 16, design: .monospaced))
-            .lineSpacing(3)
+        MarkdownTextView(text: Bindable(editorStore).documentText)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.horizontal, 24)
     }
 
     private var layoutContainer: some View {

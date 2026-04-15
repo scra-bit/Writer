@@ -127,8 +127,22 @@ struct HTMLVisitor: MarkupVisitor {
 
 /// Renders markdown to HTML
 struct MarkdownRenderer {
+    // MARK: - Static Cache
+    
+    /// Cached regex for highlight syntax processing
+    private static nonisolated(unsafe) var _highlightRegex: NSRegularExpression? = {
+        try? NSRegularExpression(pattern: "==(.+?)==", options: [])
+    }()
+    
+    /// Accesses the cached regex for highlight syntax
+    private static var highlightRegex: NSRegularExpression? {
+        _highlightRegex
+    }
+    
+    // MARK: - Static Methods
+    
     /// Renders markdown to HTML body content
-    func renderBodyContent(_ markdown: String) -> String {
+    static func renderBodyContent(_ markdown: String) -> String {
         let escaped = escapeHTMLEntities(markdown)
         
         let document = Document(parsing: escaped)
@@ -142,28 +156,15 @@ struct MarkdownRenderer {
     }
     
     /// Escapes HTML special characters
-    func escapeHTMLEntities(_ text: String) -> String {
+    static func escapeHTMLEntities(_ text: String) -> String {
         text
             .replacingOccurrences(of: "&", with: "&amp;")
             .replacingOccurrences(of: "<", with: "&lt;")
             .replacingOccurrences(of: ">", with: "&gt;")
     }
     
-    /// Processes custom ==highlight== syntax
-    func processHighlights(_ text: String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: "==(.+?)==", options: []) else {
-            return text
-        }
-        return regex.stringByReplacingMatches(
-            in: text,
-            options: [],
-            range: NSRange(text.startIndex..., in: text),
-            withTemplate: "<mark class=\"highlight\">$1</mark>"
-        )
-    }
-    
     /// Wraps content in complete HTML document with inline CSS
-    func wrapInHTMLDocument(_ bodyContent: String, theme: PreviewTheme) -> String {
+    static func wrapInHTMLDocument(_ bodyContent: String, theme: PreviewTheme) -> String {
         """
         <!DOCTYPE html>
         <html>
@@ -178,5 +179,41 @@ struct MarkdownRenderer {
         </body>
         </html>
         """
+    }
+    
+    /// Processes custom ==highlight== syntax using cached regex
+    private static func processHighlights(_ text: String) -> String {
+        guard let regex = highlightRegex else {
+            return text
+        }
+        return regex.stringByReplacingMatches(
+            in: text,
+            options: [],
+            range: NSRange(text.startIndex..., in: text),
+            withTemplate: "<mark class=\"highlight\">$1</mark>"
+        )
+    }
+    
+    // MARK: - Deprecated Instance Methods
+    
+    /// Renders markdown to HTML body content
+    /// - Deprecated: Use static `renderBodyContent(_:)` instead
+    @discardableResult
+    func renderBodyContent(_ markdown: String) -> String {
+        Self.renderBodyContent(markdown)
+    }
+    
+    /// Escapes HTML special characters
+    /// - Deprecated: Use static `escapeHTMLEntities(_:)` instead
+    @discardableResult
+    func escapeHTMLEntities(_ text: String) -> String {
+        Self.escapeHTMLEntities(text)
+    }
+    
+    /// Wraps content in complete HTML document with inline CSS
+    /// - Deprecated: Use static `wrapInHTMLDocument(_:theme:)` instead
+    @discardableResult
+    func wrapInHTMLDocument(_ bodyContent: String, theme: PreviewTheme) -> String {
+        Self.wrapInHTMLDocument(bodyContent, theme: theme)
     }
 }

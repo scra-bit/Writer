@@ -49,9 +49,8 @@ struct WebViewRepresentable: NSViewRepresentable {
     }
     
     func updateNSView(_ webView: WKWebView, context: Context) {
-        let renderer = MarkdownRenderer()
-        let bodyContent = renderer.renderBodyContent(markdown)
-        let html = renderer.wrapInHTMLDocument(bodyContent, theme: theme)
+        let bodyContent = MarkdownRenderer.renderBodyContent(markdown)
+        let html = MarkdownRenderer.wrapInHTMLDocument(bodyContent, theme: theme)
         webView.loadHTMLString(html, baseURL: nil)
     }
 }
