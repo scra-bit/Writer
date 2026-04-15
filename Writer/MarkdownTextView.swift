@@ -141,7 +141,7 @@ class MarkdownTextViewInternal: NSTextView {
         baseFont: NSFont,
         baseParagraphStyle: NSParagraphStyle
     ) {
-        let headingPattern = "^#{1,6}\\s+.+$"
+        let headingPattern = "^#{1,6}\\s.*$"
         guard let regex = try? NSRegularExpression(pattern: headingPattern, options: [.anchorsMatchLines]) else { return }
 
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
