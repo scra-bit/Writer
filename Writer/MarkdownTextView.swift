@@ -84,21 +84,22 @@ struct MarkdownTextView: NSViewRepresentable {
 class MarkdownTextViewInternal: NSTextView {
     private var isApplyingStyling = false
 
+
     // Cached regexes to avoid recompilation on every text change
     private static let headingRegex = try? NSRegularExpression(
         pattern: "^#{1,6}\\s.*$",
         options: [.anchorsMatchLines]
     )
     private static let boldRegex = try? NSRegularExpression(
-        pattern: "(\\*\\*|__)(?=[^\\s*_])(.+?)(?<=[^\\s*_])\\1",
+        pattern: "(\\*\\*|__)(?=[^\\s*_\\n])(.+?)(?<=[^\\s*_\\n])\\1",
         options: []
     )
     private static let italicRegex = try? NSRegularExpression(
-        pattern: "(?<!\\*)(\\*(?=[^\\s*])(.+?)(?<=[^\\s*])\\*(?!\\*)|(?<!_)_(?=[^\\s_])(.+?)(?<=[^\\s_])_(?!_))",
+        pattern: "(?<!\\*)(\\*(?=[^\\s*\\n])(.+?)(?<=[^\\s*\\n])\\*(?!\\*)|(?<!_)_(?=[^\\s_\\n])(.+?)(?<=[^\\s_\\n])_(?!_))",
         options: []
     )
     private static let highlightRegex = try? NSRegularExpression(
-        pattern: "==(?=[^\\s=])(.+?)(?<=[^\\s=])==",
+        pattern: "==(?=[^\\s=\\n])(.+?)(?<=[^\\s=\\n])==",
         options: []
     )
 
@@ -110,6 +111,8 @@ class MarkdownTextViewInternal: NSTextView {
     override func didChangeText() {
         super.didChangeText()
         if !isApplyingStyling {
+            // Reset typing attributes immediately to prevent bold inheritance at heading boundaries
+            applyBaseTypingAttributes()
             applyMarkdownStyling()
         }
     }
@@ -122,6 +125,7 @@ class MarkdownTextViewInternal: NSTextView {
 
         let fullRange = NSRange(location: 0, length: textStorage.length)
         let text = textStorage.string
+
 
         // Reset to default attributes
         let baseFont = font ?? NSFont.monospacedSystemFont(ofSize: 16, weight: .regular)
