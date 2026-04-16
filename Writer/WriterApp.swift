@@ -29,22 +29,6 @@ struct WriterApp: App {
         }
     }
 
-    private func exportToPDF() {
-        let exporter = PDFExporter(
-            markdown: editorStore.documentText, theme: themeStore.previewTheme)
-        let suggestedName =
-            (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document")
-            + ".pdf"
-        Task {
-            do {
-                let url = try await exporter.save(suggestedName: suggestedName)
-                exportSuccess = url.path
-            } catch let error as any Error where (error as NSError).code != NSUserCancelledError {
-                exportError = error.localizedDescription
-            }
-        }
-    }
-
     private func exportToRTF() {
         let exporter = RTFExporter(
             markdown: editorStore.documentText, theme: themeStore.previewTheme)
@@ -91,7 +75,7 @@ struct WriterApp: App {
         }
         .defaultSize(width: 1200, height: 760)
         .restorationBehavior(.disabled)
-        .commands {
+        .commandsReplaced {
             CommandMenu("File") {
                 Button("New File") {
                     editorStore.pendingCreation = .file
@@ -113,12 +97,6 @@ struct WriterApp: App {
                 .keyboardShortcut("e", modifiers: [.command, .shift])
                 .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
 
-                Button("Export to PDF") {
-                    exportToPDF()
-                }
-                .keyboardShortcut("p", modifiers: [.command, .shift])
-                .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
-
                 Button("Export to RTF") {
                     exportToRTF()
                 }
@@ -132,6 +110,21 @@ struct WriterApp: App {
                 }
                 .keyboardShortcut("f", modifiers: [.command, .shift])
                 .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
+            }
+            CommandMenu("Edit") {
+                Button("Undo") { }
+                    .keyboardShortcut("z", modifiers: .command)
+                Button("Redo") { }
+                    .keyboardShortcut("z", modifiers: [.command, .shift])
+                Divider()
+                Button("Cut") { }
+                    .keyboardShortcut("x", modifiers: .command)
+                Button("Copy") { }
+                    .keyboardShortcut("c", modifiers: .command)
+                Button("Paste") { }
+                    .keyboardShortcut("v", modifiers: .command)
+                Button("Select All") { }
+                    .keyboardShortcut("a", modifiers: .command)
             }
             CommandMenu("View") {
                 Button("Show/Hide Preview") {
