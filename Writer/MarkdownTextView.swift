@@ -208,8 +208,7 @@ class MarkdownTextViewInternal: NSTextView {
     }
 
     private func applyBoldStyles(to textStorage: NSTextStorage, text: String, baseFont: NSFont) {
-        // Pattern for **bold** or __bold__
-        let boldPattern = "(\\*\\*|__)[^*_\\s][^*_]*?[^*_\\s](\\*\\*|__)"
+        let boldPattern = "(\\*\\*|__)(?=[^\\s*_])(.+?)(?<=[^\\s*_])\\1"
         guard let regex = try? NSRegularExpression(pattern: boldPattern, options: []) else { return }
 
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
@@ -221,8 +220,7 @@ class MarkdownTextViewInternal: NSTextView {
     }
 
     private func applyItalicStyles(to textStorage: NSTextStorage, text: String, baseFont: NSFont) {
-        // Pattern for *italic* or _italic_ (but not ** or __)
-        let italicPattern = "(?<!\\*)(\\*[^*_\\s][^*_]*?[^*_\\s]\\*|_[^_\\s][^_]*?[^_\\s]_)"
+        let italicPattern = "(?<!\\*)(\\*(?=[^\\s*])(.+?)(?<=[^\\s*])\\*(?!\\*)|(?<!_)_(?=[^\\s_])(.+?)(?<=[^\\s_])_(?!_))"
         guard let regex = try? NSRegularExpression(pattern: italicPattern, options: []) else { return }
 
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
@@ -243,8 +241,7 @@ class MarkdownTextViewInternal: NSTextView {
     }
 
     private func applyHighlightStyles(to textStorage: NSTextStorage, text: String) {
-        // Pattern for ==highlight==
-        let highlightPattern = "==[^=\\s][^=]*?[^=\\s]=="
+        let highlightPattern = "==(?=[^\\s=])(.+?)(?<=[^\\s=])=="
         guard let regex = try? NSRegularExpression(pattern: highlightPattern, options: []) else { return }
 
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
