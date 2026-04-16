@@ -10,9 +10,8 @@ struct HTMLExporter {
     
     /// Generates a complete standalone HTML document with inline CSS
     func generateHTML() -> String {
-        let renderer = MarkdownRenderer()
-        let bodyContent = renderer.renderBodyContent(markdown)
-        return renderer.wrapInHTMLDocument(bodyContent, theme: theme)
+        let bodyContent = MarkdownRenderer.renderBodyContent(markdown)
+        return MarkdownRenderer.wrapInHTMLDocument(bodyContent, theme: theme)
     }
     
     /// Presents save panel and writes HTML to selected location

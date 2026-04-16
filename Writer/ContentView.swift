@@ -133,11 +133,20 @@ struct ContentView: View {
     }
 
     private var editorView: some View {
-        TextEditor(text: Bindable(editorStore).documentText)
-            .font(.system(size: 16, design: .monospaced))
-            .lineSpacing(3)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.horizontal, 24)
+        GeometryReader { geometry in
+            HStack {
+                Spacer()
+
+                MarkdownTextView(text: Bindable(editorStore).documentText)
+                    .frame(
+                        width: min(800, geometry.size.width * 0.85),
+                        height: geometry.size.height,
+                        alignment: .center
+                    )
+
+                Spacer()
+            }
+        }
     }
 
     private var layoutContainer: some View {

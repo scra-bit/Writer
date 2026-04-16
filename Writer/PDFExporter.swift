@@ -21,9 +21,8 @@ struct PDFExporter {
     /// - Parameter suggestedName: Default filename suggestion
     /// - Returns: URL of saved file
     func save(suggestedName: String = "document.pdf") async throws -> URL {
-        let renderer = MarkdownRenderer()
-        let bodyContent = renderer.renderBodyContent(markdown)
-        let html = renderer.wrapInHTMLDocument(bodyContent, theme: theme)
+        let bodyContent = MarkdownRenderer.renderBodyContent(markdown)
+        let html = MarkdownRenderer.wrapInHTMLDocument(bodyContent, theme: theme)
 
         // Present save panel first
         let savePanel = NSSavePanel()
