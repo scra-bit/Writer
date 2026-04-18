@@ -45,6 +45,22 @@ struct WriterApp: App {
         }
     }
 
+    private func exportToPDF() {
+        let exporter = PDFExporter(
+            markdown: editorStore.documentText, theme: themeStore.previewTheme)
+        let suggestedName =
+            (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document")
+            + ".pdf"
+        Task {
+            do {
+                let url = try await exporter.save(suggestedName: suggestedName)
+                exportSuccess = url.path
+            } catch let error as any Error where (error as NSError).code != NSUserCancelledError {
+                exportError = error.localizedDescription
+            }
+        }
+    }
+
     var body: some Scene {
         Window("Writer", id: "main") {
             ContentView()
@@ -101,6 +117,12 @@ struct WriterApp: App {
                     exportToRTF()
                 }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
+                .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
+
+                Button("Export to PDF") {
+                    exportToPDF()
+                }
+                .keyboardShortcut("d", modifiers: [.command, .shift])
                 .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
 
                 Divider()

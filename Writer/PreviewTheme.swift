@@ -155,6 +155,43 @@ extension PreviewTheme {
             max-width: 100%;
             height: auto;
         }
+        /* Print-optimized styles for PDF export pagination */
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+                background-color: #ffffff;
+                color: #24292e;
+            }
+            /* Prevent headings from being stranded at the bottom of a page */
+            h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+            /* Use orphans/widows for paragraphs — NOT break-inside:avoid,
+               which causes massive white-space gaps and clips long paragraphs. */
+            p {
+                orphans: 3;
+                widows: 3;
+            }
+            /* Block elements that should never be split across pages */
+            table, pre, blockquote, figure {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            img {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                max-width: 100%;
+            }
+            /* Margins are controlled by NSPrintInfo in PDFExporter,
+               so no @page rule is needed here. */
+            /* Hide interactive elements that make no sense in print */
+            a {
+                text-decoration: underline;
+                color: inherit;
+            }
+        }
         """
     }
 }
