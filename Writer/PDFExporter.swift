@@ -74,7 +74,12 @@ class PDFExporter: NSObject, WKNavigationDelegate, @unchecked Sendable {
         savePanel.title = "Export PDF"
         savePanel.message = "Choose where to save the PDF file"
 
-        let response = await savePanel.beginSheetModal(for: NSApp.keyWindow!)
+        let response: NSApplication.ModalResponse
+        if let window = NSApp.keyWindow ?? NSApp.mainWindow ?? NSApp.windows.first {
+            response = await savePanel.beginSheetModal(for: window)
+        } else {
+            response = await savePanel.begin()
+        }
 
         guard response == .OK, let url = savePanel.url else {
             throw ExportError.cancelled
