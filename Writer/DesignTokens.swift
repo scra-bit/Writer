@@ -138,7 +138,3 @@ enum DesignTokens {
         case dark
     }
 }
-
-// MARK: - Convenience Type Aliases
-
-typealias ColorScheme = DesignTokens.ColorScheme

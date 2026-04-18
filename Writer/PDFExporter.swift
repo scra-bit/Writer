@@ -16,7 +16,8 @@ import UniformTypeIdentifiers
 /// For real multi-page output with page breaks, we must use `NSPrintOperation`,
 /// which is the same path as ⌘P → "Save as PDF" and fully respects
 /// `@media print` CSS, `page-break-*`, and `@page` rules.
-class PDFExporter: NSObject, WKNavigationDelegate, @unchecked Sendable {
+@MainActor
+class PDFExporter: NSObject, WKNavigationDelegate {
     // MARK: - Configuration
 
     /// US Letter page size in points (72 dpi)
@@ -165,6 +166,9 @@ class PDFExporter: NSObject, WKNavigationDelegate, @unchecked Sendable {
         }
 
         guard success, let tempURL = self.tempURL else {
+            if let tempURL = self.tempURL {
+                try? FileManager.default.removeItem(at: tempURL)
+            }
             self.continuation?.resume(throwing: ExportError.writeFailed(
                 NSError(domain: "PDFExport", code: -1,
                         userInfo: [NSLocalizedDescriptionKey: "Print operation failed"])
