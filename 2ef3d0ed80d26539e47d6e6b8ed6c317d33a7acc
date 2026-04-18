@@ -1,0 +1,88 @@
+Writer/DesignTokens.swift
+  e20188db0dcf8787 1-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "2ef3d0ed80d26539e47d6e6b8ed6c317d33a7acc",
+  "prompts": {
+    "28c8d88231471746": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_25de9e442ffexsUXn3N0Slkjht-66ec8a41-26ca-4f82-a38b-b00b9f04f3d8",
+        "model": "unknown"
+      },
+      "human_author": "Emmett Buck-Thompson",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 1,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "ac42baa00b716a35": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_263b12704ffeGazdSVRTBPmZLL",
+        "model": "opencode/big-pickle"
+      },
+      "human_author": "Emmett Buck-Thompson",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 2,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "e20188db0dcf8787": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_25de9e442ffexsUXn3N0Slkjht",
+        "model": "opencode/big-pickle"
+      },
+      "human_author": "Emmett Buck-Thompson",
+      "messages": [],
+      "total_additions": 472,
+      "total_deletions": 1,
+      "accepted_lines": 144,
+      "overriden_lines": 0
+    },
+    "e4c57e01ac6ef2a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_263b12704ffeGazdSVRTBPmZLL-2e976645-ea54-4339-b70d-ca5c64e64736",
+        "model": "unknown"
+      },
+      "human_author": "Emmett Buck-Thompson",
+      "messages": [],
+      "total_additions": 4,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "ea3206c77a9507d7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_263b12704ffeGazdSVRTBPmZLL-545d525a-cbcb-414b-a228-1d380497a27b",
+        "model": "unknown"
+      },
+      "human_author": "Emmett Buck-Thompson",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    },
+    "ef81f7de2d77ebc8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_25de9e442ffexsUXn3N0Slkjht-c4b28755-594c-48dc-af1c-784cdb9d8ecc",
+        "model": "unknown"
+      },
+      "human_author": "Emmett Buck-Thompson",
+      "messages": [],
+      "total_additions": 9,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
