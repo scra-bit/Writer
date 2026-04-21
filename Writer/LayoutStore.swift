@@ -1,4 +1,4 @@
-//
+////   Writer is Copyright (C) 2026  Emmett Buck-Thompson and Contributors
 //  LayoutStore.swift
 //  Writer
 //

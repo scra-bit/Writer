@@ -1,4 +1,4 @@
-//
+//   Writer is Copyright (C) 2026  Emmett Buck-Thompson and Contributors
 //  MarkdownTextView.swift
 //  Writer
 //
@@ -90,8 +90,12 @@ class MarkdownTextViewInternal: NSTextView {
         pattern: "^#{1,6}\\s.*$",
         options: [.anchorsMatchLines]
     )
+    private static let boldItalicRegex = try? NSRegularExpression(
+        pattern: "(\\*\\*\\*|___)(?=[^\\s*_\\n])(.+?)(?<=[^\\s*_\\n])\\1",
+        options: []
+    )
     private static let boldRegex = try? NSRegularExpression(
-        pattern: "(\\*\\*|__)(?=[^\\s*_\\n])(.+?)(?<=[^\\s*_\\n])\\1",
+        pattern: "(?<!\\*)(\\*\\*(?=[^\\s*\\n])(.+?)(?<=[^\\s*\\n])\\*\\*(?!\\*)|(?<!_)__(?=[^\\s_\\n])(.+?)(?<=[^\\s_\\n])__(?!_))",
         options: []
     )
     private static let italicRegex = try? NSRegularExpression(
@@ -144,6 +148,9 @@ class MarkdownTextViewInternal: NSTextView {
             baseFont: baseFont,
             baseParagraphStyle: baseParagraphStyle
         )
+
+        // Apply bold-italic styles (***bolditalic*** or ___bolditalic___)
+        applyBoldItalicStyles(to: textStorage, text: text, baseFont: baseFont)
 
         // Apply bold styles (**bold** or __bold__)
         applyBoldStyles(to: textStorage, text: text, baseFont: baseFont)
@@ -228,12 +235,33 @@ class MarkdownTextViewInternal: NSTextView {
         typingAttributes[.paragraphStyle] = paragraphStyle
     }
 
+    private func applyBoldItalicStyles(to textStorage: NSTextStorage, text: String, baseFont: NSFont) {
+        guard let regex = Self.boldItalicRegex else { return }
+
+        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+
+        for match in matches {
+            let boldDesc = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold).fontDescriptor
+            let boldItalicDesc = boldDesc.withSymbolicTraits([.bold, .italic])
+            let boldItalicFont = NSFont(descriptor: boldItalicDesc, size: baseFont.pointSize)
+                ?? NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold)
+            textStorage.addAttribute(.font, value: boldItalicFont, range: match.range)
+        }
+    }
+
     private func applyBoldStyles(to textStorage: NSTextStorage, text: String, baseFont: NSFont) {
         guard let regex = Self.boldRegex else { return }
 
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
 
         for match in matches {
+            // Skip ranges already styled as bold-italic
+            let currentFont = textStorage.attribute(.font, at: match.range.location, effectiveRange: nil) as? NSFont
+            if let traits = currentFont?.fontDescriptor.symbolicTraits,
+               traits.contains(.bold) && traits.contains(.italic) {
+                continue
+            }
+
             let boldFont = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold)
             textStorage.addAttribute(.font, value: boldFont, range: match.range)
         }
@@ -245,7 +273,7 @@ class MarkdownTextViewInternal: NSTextView {
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
 
         for match in matches {
-            // Check if this range overlaps with bold - if so, skip (bold takes precedence)
+            // Check if this range overlaps with bold or bold-italic - if so, skip
             let currentFont = textStorage.attribute(.font, at: match.range.location, effectiveRange: nil) as? NSFont
             if let currentFont = currentFont,
                currentFont.fontDescriptor.symbolicTraits.contains(.bold) {
