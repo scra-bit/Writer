@@ -187,7 +187,7 @@ extension PreviewTheme {
             }
             /* Margins are controlled by NSPrintInfo in PDFExporter,
                so no @page rule is needed here. */
-            /* Hide interactive elements that make no sense in print */
+            /* Style links for print readability */
             a {
                 text-decoration: underline;
                 color: inherit;
