@@ -1,7 +1,7 @@
 //
 //  PDFExporter.swift
 //  Writer
-//
+//   Writer is Copyright (C) 2026  Emmett Buck-Thompson and Contributors
 //  Uses NSPrintOperation (WebKit's actual print pipeline) for proper
 //  multi-page pagination, @media print CSS support, and page breaks.
 //

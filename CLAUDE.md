@@ -48,5 +48,5 @@ The editor supports: `.md`, `.markdown`, `.txt`, `.text` files.
 - ⌘N: New file
 - ⌘⇧N: New folder
 - ⌘⇧E: Export to HTML
-- ⌘⇧P: Export to PDF
+- ⌘⇧D: Export to PDF
 - ⌘⇧R: Export to RTF

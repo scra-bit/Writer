@@ -2,6 +2,7 @@
 //  DesignTokens.swift
 //  Writer
 //
+//   Writer is Copyright (C) 2026  Emmett Buck-Thompson and Contributors
 //  Centralized design tokens for colors and typography
 //  These tokens provide a single source of truth for all theme values
 //
@@ -138,3 +139,7 @@ enum DesignTokens {
         case dark
     }
 }
+
+// MARK: - Convenience Type Aliases
+
+typealias ColorScheme = DesignTokens.ColorScheme

@@ -1,7 +1,7 @@
 //
 //  EditorStore.swift
 //  Writer
-//
+//   Writer is Copyright (C) 2026  Emmett Buck-Thompson and Contributors
 
 import Foundation
 import Observation
