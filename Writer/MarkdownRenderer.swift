@@ -34,6 +34,11 @@ struct HTMLVisitor: MarkupVisitor {
         return "<strong>\(content)</strong>"
     }
     
+    mutating func visitStrikethrough(_ strikethrough: Strikethrough) -> String {
+        let content = strikethrough.children.map { $0.accept(&self) }.joined()
+        return "<del>\(content)</del>"
+    }
+    
     mutating func visitEmphasis(_ emphasis: Emphasis) -> String {
         let content = emphasis.children.map { $0.accept(&self) }.joined()
         return "<em>\(content)</em>"

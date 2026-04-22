@@ -98,6 +98,10 @@ extension PreviewTheme {
         a:hover {
             text-decoration: underline;
         }
+        del {
+            text-decoration: line-through;
+            color: \(secondaryTextColor);
+        }
         code {
             font-family: \(codeFontFamily);
             font-size: 85%;

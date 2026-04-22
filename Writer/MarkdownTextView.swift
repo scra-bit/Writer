@@ -102,6 +102,10 @@ class MarkdownTextViewInternal: NSTextView {
         pattern: "(?<!\\*)(\\*(?=[^\\s*\\n])(.+?)(?<=[^\\s*\\n])\\*(?!\\*)|(?<!_)_(?=[^\\s_\\n])(.+?)(?<=[^\\s_\\n])_(?!_))",
         options: []
     )
+    private static let strikethroughRegex = try? NSRegularExpression(
+        pattern: "~~(?=[^\\s~\\n])(.+?)(?<=[^\\s~\\n])~~",
+        options: []
+    )
     private static let highlightRegex = try? NSRegularExpression(
         pattern: "==(?=[^\\s=\\n])(.+?)(?<=[^\\s=\\n])==",
         options: []
@@ -137,6 +141,7 @@ class MarkdownTextViewInternal: NSTextView {
         textStorage.removeAttribute(.foregroundColor, range: fullRange)
         textStorage.removeAttribute(.font, range: fullRange)
         textStorage.removeAttribute(.backgroundColor, range: fullRange)
+        textStorage.removeAttribute(.strikethroughStyle, range: fullRange)
         textStorage.removeAttribute(.paragraphStyle, range: fullRange)
         textStorage.addAttribute(.font, value: baseFont, range: fullRange)
         textStorage.addAttribute(.paragraphStyle, value: baseParagraphStyle, range: fullRange)
@@ -157,6 +162,9 @@ class MarkdownTextViewInternal: NSTextView {
 
         // Apply italic styles (*italic* or _italic_)
         applyItalicStyles(to: textStorage, text: text, baseFont: baseFont)
+
+        // Apply strikethrough styles (~~strikethrough~~)
+        applyStrikethroughStyles(to: textStorage, text: text)
 
         // Apply highlight styles (==highlight==)
         applyHighlightStyles(to: textStorage, text: text)
@@ -284,6 +292,17 @@ class MarkdownTextViewInternal: NSTextView {
             if let italicFont = NSFont(descriptor: baseFont.fontDescriptor.withSymbolicTraits(.italic), size: baseFont.pointSize) {
                 textStorage.addAttribute(.font, value: italicFont, range: match.range)
             }
+        }
+    }
+
+    private func applyStrikethroughStyles(to textStorage: NSTextStorage, text: String) {
+        guard let regex = Self.strikethroughRegex else { return }
+
+        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+
+        for match in matches {
+            textStorage.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: match.range)
+            textStorage.addAttribute(.foregroundColor, value: NSColor.secondaryLabelColor, range: match.range)
         }
     }
 
