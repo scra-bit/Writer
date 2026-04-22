@@ -63,8 +63,19 @@ final class EditorStore {
     var clipboardItems: [URL] = []
     var isClipboardCut = false
 
-    init() {
-        initializeRootURL()
+    init(rootURL: URL? = nil, restoreSavedFolder: Bool = true) {
+        if let rootURL {
+            self.rootURL = rootURL
+            refreshFiles()
+        } else if restoreSavedFolder {
+            initializeRootURL()
+        } else {
+            self.rootURL = nil
+            fileTree = []
+            selectedFileURL = nil
+            documentText = ""
+            lastSavedText = ""
+        }
     }
 
     // MARK: - File Operations

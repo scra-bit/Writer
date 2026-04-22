@@ -5,6 +5,19 @@ import Markdown
 // Custom MarkupVisitor to generate HTML
 struct HTMLVisitor: MarkupVisitor {
     typealias Result = String
+
+    private func escapeText(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+    }
+
+    private func escapeAttribute(_ text: String) -> String {
+        escapeText(text)
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&#39;")
+    }
     
     mutating func defaultVisit(_ markup: Markup) -> String {
         return markup.children.map { $0.accept(&self) }.joined()
@@ -26,7 +39,7 @@ struct HTMLVisitor: MarkupVisitor {
     }
     
     mutating func visitText(_ text: Markdown.Text) -> String {
-        return text.string
+        return escapeText(text.string)
     }
     
     mutating func visitStrong(_ strong: Strong) -> String {
@@ -45,12 +58,12 @@ struct HTMLVisitor: MarkupVisitor {
     }
     
     mutating func visitInlineCode(_ inlineCode: InlineCode) -> String {
-        return "<code>\(inlineCode.code)</code>"
+        return "<code>\(escapeText(inlineCode.code))</code>"
     }
     
     mutating func visitCodeBlock(_ codeBlock: CodeBlock) -> String {
-        let language = codeBlock.language ?? ""
-        let code = codeBlock.code
+        let language = escapeAttribute(codeBlock.language ?? "")
+        let code = escapeText(codeBlock.code)
         if language.isEmpty {
             return "<pre><code>\(code)</code></pre>\n"
         }
@@ -59,7 +72,7 @@ struct HTMLVisitor: MarkupVisitor {
     
     mutating func visitLink(_ link: Markdown.Link) -> String {
         let content = link.children.map { $0.accept(&self) }.joined()
-        let destination = link.destination ?? ""
+        let destination = escapeAttribute(link.destination ?? "")
         return "<a href=\"\(destination)\">\(content)</a>"
     }
     
@@ -97,8 +110,8 @@ struct HTMLVisitor: MarkupVisitor {
     
     mutating func visitImage(_ image: Markdown.Image) -> String {
         let alt = image.children.map { $0.accept(&self) }.joined()
-        let src = image.source ?? ""
-        let title = image.title ?? ""
+        let src = escapeAttribute(image.source ?? "")
+        let title = escapeAttribute(image.title ?? "")
         if title.isEmpty {
             return "<img src=\"\(src)\" alt=\"\(alt)\">"
         }
