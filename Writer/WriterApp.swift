@@ -11,6 +11,7 @@ struct WriterApp: App {
     @State private var editorStore = EditorStore()
     @State private var themeStore = ThemeStore()
     @State private var layoutStore = LayoutStore()
+    @State private var commandPaletteStore = CommandPaletteStore()
     @State private var exportError: String? = nil
     @State private var exportSuccess: String? = nil
 
@@ -82,12 +83,43 @@ struct WriterApp: App {
         NSApp.sendAction(action, to: nil, from: nil)
     }
 
+    private func configureCommandPaletteActions() {
+        commandPaletteStore.setAction(for: "newFile") {
+            self.editorStore.pendingCreation = .file
+        }
+        commandPaletteStore.setAction(for: "newFolder") {
+            self.editorStore.pendingCreation = .folder
+        }
+        commandPaletteStore.setAction(for: "exportHTML") {
+            self.exportToHTML()
+        }
+        commandPaletteStore.setAction(for: "exportRTF") {
+            self.exportToRTF()
+        }
+        commandPaletteStore.setAction(for: "exportPDF") {
+            self.exportToPDF()
+        }
+        commandPaletteStore.setAction(for: "formatTables") {
+            self.editorStore.formatAllTables()
+        }
+        commandPaletteStore.setAction(for: "refreshFolder") {
+            self.editorStore.refreshFiles()
+        }
+        commandPaletteStore.setAction(for: "save") {
+            self.editorStore.persistCurrentDocument()
+        }
+        commandPaletteStore.setAction(for: "togglePreview") {
+            self.layoutStore.showPreview.toggle()
+        }
+    }
+
     var body: some Scene {
         Window("Writer", id: "main") {
             ContentView()
                 .environment(editorStore)
                 .environment(themeStore)
                 .environment(layoutStore)
+                .environment(commandPaletteStore)
                 .alert(
                     "Export Error",
                     isPresented: Binding(
@@ -108,6 +140,9 @@ struct WriterApp: App {
                             exportSuccess = nil
                         }
                     }
+                }
+                .onAppear {
+                    configureCommandPaletteActions()
                 }
         }
         .defaultSize(width: 1200, height: 760)
@@ -185,7 +220,13 @@ struct WriterApp: App {
                 Button("Show/Hide Preview") {
                     layoutStore.showPreview.toggle()
                 }
-                .keyboardShortcut("p", modifiers: [.command, .option])
+                .keyboardShortcut("/", modifiers: [.command])
+            }
+            CommandMenu("Command Palette") {
+                Button("Show Command Palette") {
+                    commandPaletteStore.show()
+                }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
             }
         }
     }

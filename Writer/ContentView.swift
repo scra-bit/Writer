@@ -12,6 +12,7 @@ struct ContentView: View {
     @Environment(EditorStore.self) private var editorStore
     @Environment(ThemeStore.self) private var themeStore
     @Environment(LayoutStore.self) private var layoutStore
+    @Environment(CommandPaletteStore.self) private var commandPaletteStore
     @State private var renamingURL: URL?
     @State private var renamingText = ""
     @State private var dropTargetURL: URL?
@@ -50,7 +51,6 @@ struct ContentView: View {
                             ? "arrowtriangle.forward.square.fill" : "arrowtriangle.forward.square")
                 }
                 .help(layoutStore.showPreview ? "Hide Preview" : "Show Preview")
-                .keyboardShortcut("p", modifiers: [.command])
             }
 
             ToolbarItem {
@@ -66,6 +66,11 @@ struct ContentView: View {
                     Image(systemName: "arrow.clockwise")
                 }
                 .help("Refresh Folder")
+            }
+        }
+        .overlay {
+            if commandPaletteStore.isVisible {
+                CommandPaletteView()
             }
         }
     }
