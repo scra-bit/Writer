@@ -1,0 +1,36 @@
+Writer.xcodeproj/xcshareddata/xcschemes/Writer.xcscheme
+  0a4e3b67bef8e415 1-3,5-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "44c3d66ee406026183b135b07f8a0c498055c5ab",
+  "prompts": {
+    "0a4e3b67bef8e415": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b7230b9-c140-422c-86e3-08aa4fccfcae",
+        "model": "minimax-m2.7"
+      },
+      "human_author": "Emmett Buck-Thompson",
+      "messages": [],
+      "total_additions": 322,
+      "total_deletions": 17,
+      "accepted_lines": 212,
+      "overriden_lines": 1
+    },
+    "5a5a5de8c440532c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019db58b-f149-7921-838b-8435a246b45a",
+        "model": "gpt-5.4"
+      },
+      "human_author": "Emmett Buck-Thompson",
+      "messages": [],
+      "total_additions": 3185,
+      "total_deletions": 0,
+      "accepted_lines": 3129,
+      "overriden_lines": 17
+    }
+  }
+}
