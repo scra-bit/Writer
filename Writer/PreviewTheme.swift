@@ -160,6 +160,30 @@ extension PreviewTheme {
             max-width: 100%;
             height: auto;
         }
+        figure.content-block {
+            margin: 0 0 20px 0;
+        }
+        .content-block-caption {
+            margin-top: 8px;
+            color: \(secondaryTextColor);
+            font-size: 0.95em;
+        }
+        .content-block-text > :last-child,
+        .content-block-code > :last-child,
+        .content-block-table > :last-child {
+            margin-bottom: 0;
+        }
+        .content-block-warning {
+            padding: 12px 14px;
+            color: #8a5a00;
+            background: #fff8e6;
+            border: 1px solid #f0cf7a;
+            border-color: #f0cf7a;
+            border-radius: 8px;
+        }
+        .content-block-warning p {
+            margin-bottom: 12px;
+        }
         /* Print-optimized styles for PDF export pagination */
         @media print {
             body {

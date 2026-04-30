@@ -9,6 +9,8 @@ import AppKit
 struct MarkdownTextView: NSViewRepresentable {
     @Binding var text: String
     var fontSize: CGFloat = 16
+    var documentURL: URL?
+    var workspaceRootURL: URL?
 
     func makeNSView(context: Context) -> NSScrollView {
         // Create scroll view manually with custom text view
@@ -30,6 +32,10 @@ struct MarkdownTextView: NSViewRepresentable {
         textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
         textView.textContainerInset = NSSize(width: 24, height: 12)
         textView.textContainer?.lineFragmentPadding = 0
+        textView.renderContext = MarkdownRenderContext(
+            documentURL: documentURL,
+            workspaceRootURL: workspaceRootURL
+        )
 
         textView.applyBaseTypingAttributes()
 
@@ -53,6 +59,12 @@ struct MarkdownTextView: NSViewRepresentable {
             textView.applyMarkdownStyling()
             textView.setSelectedRange(selectedRange)
         }
+
+        textView.renderContext = MarkdownRenderContext(
+            documentURL: documentURL,
+            workspaceRootURL: workspaceRootURL
+        )
+        textView.applyMarkdownStyling()
 
         // Update font size if changed
         if abs(textView.font?.pointSize ?? 0 - fontSize) > 0.1 {
@@ -83,6 +95,7 @@ struct MarkdownTextView: NSViewRepresentable {
 
 class MarkdownTextViewInternal: NSTextView {
     private var isApplyingStyling = false
+    var renderContext = MarkdownRenderContext()
 
 
     // Cached regexes to avoid recompilation on every text change
@@ -168,6 +181,9 @@ class MarkdownTextViewInternal: NSTextView {
 
         // Apply highlight styles (==highlight==)
         applyHighlightStyles(to: textStorage, text: text)
+
+        // Apply content block styles
+        applyContentBlockStyles(to: textStorage, text: text)
 
         applyBaseTypingAttributes()
     }
@@ -315,6 +331,33 @@ class MarkdownTextViewInternal: NSTextView {
 
         for match in matches {
             textStorage.addAttribute(.backgroundColor, value: highlightColor, range: match.range)
+        }
+    }
+
+    private func applyContentBlockStyles(to textStorage: NSTextStorage, text: String) {
+        let nsText = text as NSString
+        var searchLocation = 0
+        let fullLength = nsText.length
+
+        while searchLocation < fullLength {
+            let paragraphRange = nsText.paragraphRange(for: NSRange(location: searchLocation, length: 0))
+            let line = nsText.substring(with: paragraphRange)
+                .trimmingCharacters(in: .newlines)
+
+            guard let match = ContentBlockSyntax.parseLine(line) else {
+                searchLocation = NSMaxRange(paragraphRange)
+                continue
+            }
+
+            let resolved = ContentBlockSyntax.resolve(match, context: renderContext)
+            let color: NSColor = resolved.url == nil ? .systemOrange : .systemBlue
+            textStorage.addAttribute(.foregroundColor, value: color, range: paragraphRange)
+
+            let backgroundColor = (resolved.url == nil ? NSColor.systemOrange : NSColor.systemBlue)
+                .withAlphaComponent(0.08)
+            textStorage.addAttribute(.backgroundColor, value: backgroundColor, range: paragraphRange)
+
+            searchLocation = NSMaxRange(paragraphRange)
         }
     }
 }
