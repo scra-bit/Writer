@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "f5e2a5b8c63e6161a7c7f5d703e1f1d8d2a3d058",
+  "prompts": {
+    "ebd270bee4040fe7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5dcc15d6-5a6b-475e-9f7f-675cad0777c2",
+        "model": "qwen3.5"
+      },
+      "human_author": "Emmett Buck-Thompson",
+      "messages": [],
+      "total_additions": 67,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
