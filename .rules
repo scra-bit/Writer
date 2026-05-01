@@ -1,0 +1,62 @@
+# Writer Codebase Rules & Guidelines
+
+This file contains shared rules and guidelines for AI agents working with the Writer codebase. Referenced by both `CLAUDE.md` and `agents.md` to ensure consistency.
+
+## 1. Project Context
+
+- **Writer** is a distraction-free text editor for macOS
+- Built with **SwiftUI** and **Swift 5.0+**
+- Uses **@Observable** (Swift Observation framework) for state management
+- Markdown rendering via **Apple's Markdown framework**
+
+## 2. Development Rules
+
+- Always use **@Observable** for state management (not ObservableObject)
+- Use **SwiftUI environment** for dependency injection:
+  - EditorStore
+  - ThemeStore
+  - LayoutStore
+  - CommandPaletteStore
+- Follow the existing architecture patterns
+- Maintain **security-scoped bookmark patterns** for file access
+- Use the **Markdown framework's custom MarkupVisitor** for HTML generation
+
+## 3. Code Style Guidelines
+
+- Use **@MainActor** for UI-related stores
+- Use **final class** for observable stores
+- Use **@Environment** for store access in views
+- Prefer **@State private var** for view-local state
+- Use **@Binding** for child view communication
+- Follow **Swift naming conventions**
+
+## 4. File Organization
+
+- Core app files in `/Writer` directory
+- Tests in `/WriterTests` directory
+- Assets in `/Writer/Assets.xcassets`
+- Keep related functionality together
+
+## 5. Key Patterns to Follow
+
+- **Autosave pattern** in EditorStore (scheduleAutosave with Task)
+- **Content block syntax** (iainc/Markdown-Content-Blocks spec)
+- **Table formatting** with Unicode width calculation
+- **Export patterns**:
+  - HTML with inline CSS
+  - PDF via NSPrintOperation
+  - RTF via NSAttributedString
+
+## 6. Build & Test
+
+- Open in Xcode: `open Writer.xcodeproj`
+- Build: Product → Build (⌘B)
+- Run: Product → Run (⌘R)
+- Test: Product → Test (⌘U)
+
+## 7. Important Notes
+
+- The app uses **AppKit integration** (NSPrintOperation, NSPasteboard, etc.)
+- **Security-scoped bookmarks** persist folder access
+- **WKWebView** is used for preview rendering
+- **Custom NSTextView** for markdown syntax highlighting
