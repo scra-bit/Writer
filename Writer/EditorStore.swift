@@ -271,6 +271,13 @@ final class EditorStore {
         selectedFileURL?.lastPathComponent ?? "Writer"
     }
 
+    var currentDocumentURL: URL? {
+        guard let selectedFileURL, !selectedFileURL.hasDirectoryPath else {
+            return nil
+        }
+        return selectedFileURL
+    }
+
     var newFileDirectoryURL: URL? {
         if let activeDirectoryURL, containsDirectory(at: activeDirectoryURL, in: fileTree) {
             return activeDirectoryURL

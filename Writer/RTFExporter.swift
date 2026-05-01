@@ -9,12 +9,23 @@ import UniformTypeIdentifiers
 struct RTFExporter {
     let markdown: String
     let theme: PreviewTheme
+    let renderContext: MarkdownRenderContext
+
+    init(
+        markdown: String,
+        theme: PreviewTheme,
+        renderContext: MarkdownRenderContext = MarkdownRenderContext()
+    ) {
+        self.markdown = markdown
+        self.theme = theme
+        self.renderContext = renderContext
+    }
 
     /// Presents save panel and exports markdown as RTF
     /// - Parameter suggestedName: Default filename suggestion
     /// - Returns: URL of saved file
     func save(suggestedName: String = "document.rtf") async throws -> URL {
-        let bodyContent = MarkdownRenderer.renderBodyContent(markdown)
+        let bodyContent = MarkdownRenderer.renderBodyContent(markdown, context: renderContext)
         let html = MarkdownRenderer.wrapInHTMLDocument(bodyContent, theme: theme)
 
         // Present save panel

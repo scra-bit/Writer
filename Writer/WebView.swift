@@ -6,11 +6,16 @@ import Observation
 struct WebView: View {
     let markdown: String
     let theme: PreviewTheme
+    let renderContext: MarkdownRenderContext
     @Environment(ThemeStore.self) private var themeStore
     
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            WebViewRepresentable(markdown: markdown, theme: themeStore.previewTheme)
+            WebViewRepresentable(
+                markdown: markdown,
+                theme: themeStore.previewTheme,
+                renderContext: renderContext
+            )
         }
         .overlay(alignment: .bottomTrailing) {
             Menu {
@@ -39,6 +44,7 @@ struct WebView: View {
 struct WebViewRepresentable: NSViewRepresentable {
     let markdown: String
     let theme: PreviewTheme
+    let renderContext: MarkdownRenderContext
     
     func makeNSView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
@@ -50,7 +56,7 @@ struct WebViewRepresentable: NSViewRepresentable {
     }
     
     func updateNSView(_ webView: WKWebView, context: Context) {
-        let bodyContent = MarkdownRenderer.renderBodyContent(markdown)
+        let bodyContent = MarkdownRenderer.renderBodyContent(markdown, context: renderContext)
         let html = MarkdownRenderer.wrapInHTMLDocument(bodyContent, theme: theme)
         webView.loadHTMLString(html, baseURL: nil)
     }

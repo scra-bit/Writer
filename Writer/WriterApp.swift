@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import AppKit
 
 @main
 struct WriterApp: App {
@@ -14,9 +15,19 @@ struct WriterApp: App {
     @State private var exportError: String? = nil
     @State private var exportSuccess: String? = nil
 
+    private var renderContext: MarkdownRenderContext {
+        MarkdownRenderContext(
+            documentURL: editorStore.currentDocumentURL,
+            workspaceRootURL: editorStore.rootURL
+        )
+    }
+
     private func exportToHTML() {
         let exporter = HTMLExporter(
-            markdown: editorStore.documentText, theme: themeStore.previewTheme)
+            markdown: editorStore.documentText,
+            theme: themeStore.previewTheme,
+            renderContext: renderContext
+        )
         let suggestedName =
             (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document")
             + ".html"
@@ -32,7 +43,10 @@ struct WriterApp: App {
 
     private func exportToRTF() {
         let exporter = RTFExporter(
-            markdown: editorStore.documentText, theme: themeStore.previewTheme)
+            markdown: editorStore.documentText,
+            theme: themeStore.previewTheme,
+            renderContext: renderContext
+        )
         let suggestedName =
             (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document")
             + ".rtf"
@@ -48,7 +62,10 @@ struct WriterApp: App {
 
     private func exportToPDF() {
         let exporter = PDFExporter(
-            markdown: editorStore.documentText, theme: themeStore.previewTheme)
+            markdown: editorStore.documentText,
+            theme: themeStore.previewTheme,
+            renderContext: renderContext
+        )
         let suggestedName =
             (editorStore.selectedFileURL?.deletingPathExtension().lastPathComponent ?? "document")
             + ".pdf"
@@ -60,6 +77,10 @@ struct WriterApp: App {
                 exportError = error.localizedDescription
             }
         }
+    }
+
+    private func sendEditAction(_ action: Selector) {
+        NSApp.sendAction(action, to: nil, from: nil)
     }
 
     private func configureCommandPaletteActions() {
@@ -169,18 +190,30 @@ struct WriterApp: App {
                 .disabled(editorStore.selectedFileURL == nil && editorStore.documentText.isEmpty)
             }
             CommandMenu("Edit") {
-                Button("Undo") { }
+                Button("Undo") {
+                    sendEditAction(Selector(("undo:")))
+                }
                     .keyboardShortcut("z", modifiers: .command)
-                Button("Redo") { }
+                Button("Redo") {
+                    sendEditAction(Selector(("redo:")))
+                }
                     .keyboardShortcut("z", modifiers: [.command, .shift])
                 Divider()
-                Button("Cut") { }
+                Button("Cut") {
+                    sendEditAction(#selector(NSText.cut(_:)))
+                }
                     .keyboardShortcut("x", modifiers: .command)
-                Button("Copy") { }
+                Button("Copy") {
+                    sendEditAction(#selector(NSText.copy(_:)))
+                }
                     .keyboardShortcut("c", modifiers: .command)
-                Button("Paste") { }
+                Button("Paste") {
+                    sendEditAction(#selector(NSText.paste(_:)))
+                }
                     .keyboardShortcut("v", modifiers: .command)
-                Button("Select All") { }
+                Button("Select All") {
+                    sendEditAction(#selector(NSText.selectAll(_:)))
+                }
                     .keyboardShortcut("a", modifiers: .command)
             }
             CommandMenu("View") {

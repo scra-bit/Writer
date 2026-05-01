@@ -38,15 +38,21 @@ class PDFExporter: NSObject, WKNavigationDelegate {
 
     let markdown: String
     let theme: PreviewTheme
+    let renderContext: MarkdownRenderContext
 
-    init(markdown: String, theme: PreviewTheme) {
+    init(
+        markdown: String,
+        theme: PreviewTheme,
+        renderContext: MarkdownRenderContext = MarkdownRenderContext()
+    ) {
         self.markdown = markdown
         self.theme = theme
+        self.renderContext = renderContext
     }
 
     /// Renders the current markdown to paginated PDF data.
     func generatePDF() async throws -> Data {
-        let bodyContent = MarkdownRenderer.renderBodyContent(markdown)
+        let bodyContent = MarkdownRenderer.renderBodyContent(markdown, context: renderContext)
         let html = MarkdownRenderer.wrapInHTMLDocument(bodyContent, theme: theme)
 
         // Frame width determines the content layout width for print.

@@ -142,7 +142,11 @@ struct ContentView: View {
             HStack {
                 Spacer()
 
-                MarkdownTextView(text: Bindable(editorStore).documentText)
+                MarkdownTextView(
+                    text: Bindable(editorStore).documentText,
+                    documentURL: editorStore.currentDocumentURL,
+                    workspaceRootURL: editorStore.rootURL
+                )
                     .frame(
                         width: min(800, geometry.size.width * 0.85),
                         height: geometry.size.height,
@@ -166,7 +170,12 @@ struct ContentView: View {
 
     private var previewContainer: some View {
         WebView(
-            markdown: editorStore.documentText, theme: themeStore.previewTheme
+            markdown: editorStore.documentText,
+            theme: themeStore.previewTheme,
+            renderContext: MarkdownRenderContext(
+                documentURL: editorStore.currentDocumentURL,
+                workspaceRootURL: editorStore.rootURL
+            )
         )
         .opacity(layoutStore.showPreview ? 1 : 0)
         .disabled(!layoutStore.showPreview)

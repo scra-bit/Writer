@@ -8,10 +8,21 @@ import UniformTypeIdentifiers
 struct HTMLExporter {
     let markdown: String
     let theme: PreviewTheme
+    let renderContext: MarkdownRenderContext
+
+    init(
+        markdown: String,
+        theme: PreviewTheme,
+        renderContext: MarkdownRenderContext = MarkdownRenderContext()
+    ) {
+        self.markdown = markdown
+        self.theme = theme
+        self.renderContext = renderContext
+    }
     
     /// Generates a complete standalone HTML document with inline CSS
     func generateHTML() -> String {
-        let bodyContent = MarkdownRenderer.renderBodyContent(markdown)
+        let bodyContent = MarkdownRenderer.renderBodyContent(markdown, context: renderContext)
         return MarkdownRenderer.wrapInHTMLDocument(bodyContent, theme: theme)
     }
     
