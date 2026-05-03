@@ -59,8 +59,8 @@ struct EditorPreferencesView: View {
             }
 
             Section("Editing") {
-                Toggle("Smart Dashes", isOn: .constant(false))
-                Toggle("Smart Quotes", isOn: .constant(false))
+                Toggle("Smart Dashes (Coming Soon)", isOn: .constant(false)).disabled(true)
+                Toggle("Smart Quotes (Coming Soon)", isOn: .constant(false)).disabled(true)
             }
         }
         .padding(20)
@@ -82,12 +82,12 @@ struct ExportPreferencesView: View {
     var body: some View {
         Form {
             Section("HTML Export") {
-                Toggle("Include CSS", isOn: .constant(true))
-                Toggle("Inline Styles", isOn: .constant(false))
+                Toggle("Include CSS (Coming Soon)", isOn: .constant(true)).disabled(true)
+                Toggle("Inline Styles (Coming Soon)", isOn: .constant(false)).disabled(true)
             }
 
             Section("PDF Export") {
-                Toggle("Include Page Numbers", isOn: .constant(true))
+                Toggle("Include Page Numbers (Coming Soon)", isOn: .constant(true)).disabled(true)
             }
         }
         .padding(20)
@@ -104,11 +104,11 @@ struct WorkspacePreferencesView: View {
         Form {
             Section("File Browser") {
                 Toggle("Hide Dotfiles", isOn: Bindable(editorStore).hideDotfiles)
-                Toggle("Show File Extensions", isOn: .constant(true))
+                Toggle("Show File Extensions (Coming Soon)", isOn: .constant(true)).disabled(true)
             }
 
             Section("Behavior") {
-                Toggle("Restore Folder on Launch", isOn: .constant(true))
+                Toggle("Restore Folder on Launch (Coming Soon)", isOn: .constant(true)).disabled(true)
             }
         }
         .padding(20)

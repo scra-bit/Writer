@@ -58,8 +58,10 @@ final class EditorStore {
     var pendingCreation: PendingCreation?
 
     var autosaveDelay: Double = {
-        let saved = UserDefaults.standard.double(forKey: BookmarkKeys.autosaveDelay)
-        return saved > 0 ? saved : 350.0
+        guard UserDefaults.standard.object(forKey: BookmarkKeys.autosaveDelay) != nil else {
+            return 0.35  // Default: 350ms = 0.35 seconds
+        }
+        return UserDefaults.standard.double(forKey: BookmarkKeys.autosaveDelay)
     }() {
         didSet {
             UserDefaults.standard.set(autosaveDelay, forKey: BookmarkKeys.autosaveDelay)
