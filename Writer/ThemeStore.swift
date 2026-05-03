@@ -35,9 +35,24 @@ final class ThemeStore {
         }
     }
 
-    var preset: Preset = .default
-    var baseFontSize: Double = 16
+    private enum Keys {
+        static let preset = "themePreset"
+        static let baseFontSize = "baseFontSize"
+    }
+
+    var preset: Preset = .default {
+        didSet { UserDefaults.standard.set(preset.rawValue, forKey: Keys.preset) }
+    }
+    var baseFontSize: Double = 16 {
+        didSet { UserDefaults.standard.set(baseFontSize, forKey: Keys.baseFontSize) }
+    }
     var previewTheme: PreviewTheme = .sansSerif
+
+    init() {
+        let savedPreset = UserDefaults.standard.string(forKey: Keys.preset) ?? Preset.default.rawValue
+        self.preset = Preset(rawValue: savedPreset) ?? .default
+        self.baseFontSize = UserDefaults.standard.object(forKey: Keys.baseFontSize) as? Double ?? 16
+    }
 
     var font: Font {
         .system(size: baseFontSize)

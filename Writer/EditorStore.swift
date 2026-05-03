@@ -9,6 +9,8 @@ import AppKit
 
 private enum BookmarkKeys {
     static let folderBookmark = "forthewriting_folder_bookmark"
+    static let autosaveDelay = "forthewriting_autosave_delay"
+    static let hideDotfiles = "forthewriting_hide_dotfiles"
 }
 
 @MainActor
@@ -54,6 +56,22 @@ final class EditorStore {
     var documentText = ""
     var errorMessage: String?
     var pendingCreation: PendingCreation?
+
+    var autosaveDelay: Double = {
+        let saved = UserDefaults.standard.double(forKey: BookmarkKeys.autosaveDelay)
+        return saved > 0 ? saved : 350.0
+    }() {
+        didSet {
+            UserDefaults.standard.set(autosaveDelay, forKey: BookmarkKeys.autosaveDelay)
+        }
+    }
+    var hideDotfiles: Bool = {
+        UserDefaults.standard.object(forKey: BookmarkKeys.hideDotfiles) as? Bool ?? true
+    }() {
+        didSet {
+            UserDefaults.standard.set(hideDotfiles, forKey: BookmarkKeys.hideDotfiles)
+        }
+    }
 
     private var lastSavedText = ""
     private var autosaveTask: Task<Void, Never>?
@@ -370,7 +388,7 @@ final class EditorStore {
         guard selectedFileURL != nil else { return }
 
         autosaveTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(350))
+            try? await Task.sleep(for: .milliseconds(Int(autosaveDelay * 1000)))
 
             guard !Task.isCancelled else { return }
             persistCurrentDocument()
@@ -439,10 +457,11 @@ final class EditorStore {
     }
 
     private func loadNodes(in directoryURL: URL) throws -> [FileNode] {
+        let options: FileManager.DirectoryEnumerationOptions = hideDotfiles ? [.skipsHiddenFiles] : []
         let contents = try FileManager.default.contentsOfDirectory(
             at: directoryURL,
             includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
+            options: options
         )
 
         return try contents

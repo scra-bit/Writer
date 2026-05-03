@@ -9,5 +9,15 @@ import Observation
 @MainActor
 @Observable
 final class LayoutStore {
-    var showPreview = false
+    private enum Keys {
+        static let showPreview = "showPreview"
+    }
+
+    var showPreview: Bool = false {
+        didSet { UserDefaults.standard.set(showPreview, forKey: Keys.showPreview) }
+    }
+
+    init() {
+        self.showPreview = UserDefaults.standard.bool(forKey: Keys.showPreview)
+    }
 }

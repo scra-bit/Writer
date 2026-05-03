@@ -229,5 +229,13 @@ struct WriterApp: App {
                 .keyboardShortcut("p", modifiers: [.command, .shift])
             }
         }
+
+        Settings {
+            PreferencesView()
+                .environment(editorStore)
+                .environment(themeStore)
+                .environment(layoutStore)
+                .environment(commandPaletteStore)
+        }
     }
 }
