@@ -101,13 +101,16 @@ final class EditorStore {
     // MARK: - File Operations
 
     func copyItems(_ urls: [URL]) {
-        clipboardItems = urls
-        isClipboardCut = false
+        setClipboard(urls, isCut: false)
     }
 
     func cutItems(_ urls: [URL]) {
+        setClipboard(urls, isCut: true)
+    }
+    
+    private func setClipboard(_ urls: [URL], isCut: Bool) {
         clipboardItems = urls
-        isClipboardCut = true
+        isClipboardCut = isCut
     }
 
     func pasteItems(to destinationDirectory: URL) {

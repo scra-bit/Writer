@@ -52,23 +52,31 @@ struct MarkdownTextView: NSViewRepresentable {
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? MarkdownTextViewInternal else { return }
 
+        // Track if we need to apply styling
+        var needsStyling = false
+        
         // Only update if text changed from outside (not from typing)
         if textView.string != text {
             let selectedRange = textView.selectedRange()
             textView.string = text
-            textView.applyMarkdownStyling()
             textView.setSelectedRange(selectedRange)
+            needsStyling = true
         }
 
+        // Update render context
         textView.renderContext = MarkdownRenderContext(
             documentURL: documentURL,
             workspaceRootURL: workspaceRootURL
         )
-        textView.applyMarkdownStyling()
+        needsStyling = true
 
         // Update font size if changed
         if abs(textView.font?.pointSize ?? 0 - fontSize) > 0.1 {
             textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+            needsStyling = true
+        }
+        
+        if needsStyling {
             textView.applyMarkdownStyling()
         }
     }
@@ -147,10 +155,12 @@ class MarkdownTextViewInternal: NSTextView {
         let fullRange = NSRange(location: 0, length: textStorage.length)
         let text = textStorage.string
 
-
         // Reset to default attributes
         let baseFont = font ?? NSFont.monospacedSystemFont(ofSize: 16, weight: .regular)
         let baseParagraphStyle = baseParagraphStyle(for: baseFont)
+        
+        // Batch attribute updates for better performance
+        textStorage.beginEditing()
         textStorage.removeAttribute(.foregroundColor, range: fullRange)
         textStorage.removeAttribute(.font, range: fullRange)
         textStorage.removeAttribute(.backgroundColor, range: fullRange)
@@ -167,13 +177,9 @@ class MarkdownTextViewInternal: NSTextView {
             baseParagraphStyle: baseParagraphStyle
         )
 
-        // Apply bold-italic styles (***bolditalic*** or ___bolditalic___)
+        // Apply styles in order of specificity - bold-italic first to avoid overlap checks
         applyBoldItalicStyles(to: textStorage, text: text, baseFont: baseFont)
-
-        // Apply bold styles (**bold** or __bold__)
         applyBoldStyles(to: textStorage, text: text, baseFont: baseFont)
-
-        // Apply italic styles (*italic* or _italic_)
         applyItalicStyles(to: textStorage, text: text, baseFont: baseFont)
 
         // Apply strikethrough styles (~~strikethrough~~)
@@ -185,6 +191,7 @@ class MarkdownTextViewInternal: NSTextView {
         // Apply content block styles
         applyContentBlockStyles(to: textStorage, text: text)
 
+        textStorage.endEditing()
         applyBaseTypingAttributes()
     }
 
@@ -277,16 +284,9 @@ class MarkdownTextViewInternal: NSTextView {
         guard let regex = Self.boldRegex else { return }
 
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+        let boldFont = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold)
 
         for match in matches {
-            // Skip ranges already styled as bold-italic
-            let currentFont = textStorage.attribute(.font, at: match.range.location, effectiveRange: nil) as? NSFont
-            if let traits = currentFont?.fontDescriptor.symbolicTraits,
-               traits.contains(.bold) && traits.contains(.italic) {
-                continue
-            }
-
-            let boldFont = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold)
             textStorage.addAttribute(.font, value: boldFont, range: match.range)
         }
     }
@@ -297,14 +297,7 @@ class MarkdownTextViewInternal: NSTextView {
         let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
 
         for match in matches {
-            // Check if this range overlaps with bold or bold-italic - if so, skip
-            let currentFont = textStorage.attribute(.font, at: match.range.location, effectiveRange: nil) as? NSFont
-            if let currentFont = currentFont,
-               currentFont.fontDescriptor.symbolicTraits.contains(.bold) {
-                continue
-            }
-
-            // Apply italic
+            // Apply italic - bold-italic already handled, so no need to check
             if let italicFont = NSFont(descriptor: baseFont.fontDescriptor.withSymbolicTraits(.italic), size: baseFont.pointSize) {
                 textStorage.addAttribute(.font, value: italicFont, range: match.range)
             }
@@ -352,10 +345,7 @@ class MarkdownTextViewInternal: NSTextView {
             let resolved = ContentBlockSyntax.resolve(match, context: renderContext)
             let color: NSColor = resolved.url == nil ? .systemOrange : .systemBlue
             textStorage.addAttribute(.foregroundColor, value: color, range: paragraphRange)
-
-            let backgroundColor = (resolved.url == nil ? NSColor.systemOrange : NSColor.systemBlue)
-                .withAlphaComponent(0.08)
-            textStorage.addAttribute(.backgroundColor, value: backgroundColor, range: paragraphRange)
+            textStorage.addAttribute(.backgroundColor, value: color.withAlphaComponent(0.08), range: paragraphRange)
 
             searchLocation = NSMaxRange(paragraphRange)
         }

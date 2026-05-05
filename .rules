@@ -5,58 +5,214 @@ This file contains shared rules and guidelines for AI agents working with the Wr
 ## 1. Project Context
 
 - **Writer** is a distraction-free text editor for macOS
-- Built with **SwiftUI** and **Swift 5.0+**
-- Uses **@Observable** (Swift Observation framework) for state management
-- Markdown rendering via **Apple's Markdown framework**
+- Built with **SwiftUI** and **Swift 5.9+** (uses Swift 6 features like `@Observable`)
+- Uses **Swift Observation framework** (`@Observable`) for state management
+- Markdown rendering via **Apple's Markdown framework** with custom `MarkupVisitor`
 
 ## 2. Development Rules
 
-- Always use **@Observable** for state management (not ObservableObject)
-- Use **SwiftUI environment** for dependency injection:
-  - EditorStore
-  - ThemeStore
-  - LayoutStore
-  - CommandPaletteStore
-- Follow the existing architecture patterns
-- Maintain **security-scoped bookmark patterns** for file access
-- Use the **Markdown framework's custom MarkupVisitor** for HTML generation
+### State Management
+- Always use `@Observable` for observable stores (combines `@MainActor` + Observation)
+- Stores should be `final class` and marked with `@MainActor` when UI-related
+- Use `@Environment(StoreName.self)` for accessing stores in views
+- Use `@Binding` for passing mutable state to child views
+
+### Store Pattern
+Stores are created in `WriterApp.swift` and injected via `.environment()`:
+```swift
+@main
+struct WriterApp: App {
+    @State private var editorStore = EditorStore()
+    @State private var themeStore = ThemeStore()
+    @State private var layoutStore = LayoutStore()
+    @State private var commandPaletteStore = CommandPaletteStore()
+}
+```
+
+### Security-Scoped Bookmarks
+- Folder access uses security-scoped bookmarks stored in `UserDefaults.standard`
+- Key format: `forthewriting_<feature>_<setting>` (e.g., `forthewriting_folder_bookmark`)
+- Always call `startAccessingSecurityScopedResource()` when accessing bookmarked URLs
+
+### Markdown Rendering
+- Uses `Markdown` framework (Apple's built-in parser)
+- Custom `HTMLVisitor` (conforming to `MarkupVisitor`) converts AST to HTML
+- Content blocks follow the iainc/Markdown-Content-Blocks pattern
+- Highlight syntax `==text==` processed separately, wraps with `<mark>` tags
 
 ## 3. Code Style Guidelines
 
-- Use **@MainActor** for UI-related stores
-- Use **final class** for observable stores
-- Use **@Environment** for store access in views
-- Prefer **@State private var** for view-local state
-- Use **@Binding** for child view communication
-- Follow **Swift naming conventions**
+### Type Annotations
+Prefer explicit types for public APIs and struct properties:
+```swift
+struct MarkdownRenderContext {
+    let documentURL: URL?
+    let workspaceRootURL: URL?
+}
+
+let html = MarkdownRenderer.renderBodyContent(markdown, context: context)
+```
+
+### Mutating Methods
+`HTMLVisitor` methods are `mutating` because it holds state (regex cache):
+```swift
+mutating func visitHeading(_ heading: Heading) -> String { ... }
+```
+
+### Computed Properties
+Use computed properties for derived state:
+```swift
+var currentTitle: String {
+    selectedFileURL?.lastPathComponent ?? "Writer"
+}
+```
+
+### UserDefaults Keys
+Group keys in a private enum at the top of the file:
+```swift
+private enum BookmarkKeys {
+    static let folderBookmark = "forthewriting_folder_bookmark"
+    static let autosaveDelay = "forthewriting_autosave_delay"
+}
+```
 
 ## 4. File Organization
 
-- Core app files in `/Writer` directory
-- Tests in `/WriterTests` directory
-- Assets in `/Writer/Assets.xcassets`
-- Keep related functionality together
+```
+Writer/
+├── WriterApp.swift           # App entry, menu configuration, store injection
+├── EditorStore.swift         # Core state: files, documents, autosave
+├── ThemeStore.swift          # Theme and typography settings
+├── LayoutStore.swift         # UI layout state (preview toggle)
+├── CommandPaletteStore.swift # Command palette state
+├── MarkdownRenderer.swift    # Markdown → HTML conversion
+├── HTMLExporter.swift        # HTML export
+├── PDFExporter.swift         # PDF export
+├── RTFExporter.swift         # RTF export
+├── TableFormatter.swift      # Markdown table formatting
+├── MarkdownTextView.swift    # NSTextView wrapper with syntax highlighting
+├── WebView.swift             # WKWebView wrapper for preview
+├── ContentView.swift         # Main UI
+├── DesignTokens.swift        # Shared design constants
+└── PreviewTheme.swift        # Theme definitions
+```
+
+Tests are in `WriterTests/` mirroring the source structure.
 
 ## 5. Key Patterns to Follow
 
-- **Autosave pattern** in EditorStore (scheduleAutosave with Task)
-- **Content block syntax** (iainc/Markdown-Content-Blocks spec)
-- **Table formatting** with Unicode width calculation
-- **Export patterns**:
-  - HTML with inline CSS
-  - PDF via NSPrintOperation
-  - RTF via NSAttributedString
+### Autosave Pattern (in EditorStore)
+```swift
+private var autosaveTask: Task<Void, Never>?
+
+func scheduleAutosave() {
+    autosaveTask?.cancel()
+    
+    autosaveTask = Task { @MainActor in
+        try? await Task.sleep(for: .milliseconds(Int(autosaveDelay * 1000)))
+        guard !Task.isCancelled else { return }
+        persistCurrentDocument()
+    }
+}
+```
+
+### Content Block Detection
+Lines are checked at the start of `MarkdownRenderer.renderBodyContent`:
+- Must start with `/absolute/path`, `~/path`, `./relative`, or `<url>`
+- Must be at column 0-3 (indentation check)
+- Must have a valid extension for classification
+
+### Table Formatting
+- Detects table structure via delimiter rows (`|---|---|`)
+- Uses Unicode width calculation for CJK character alignment
+- `formatAllTables()` processes entire document
+
+### Export Patterns
+All exporters follow a similar pattern:
+1. Accept markdown string and theme
+2. Generate HTML via `MarkdownRenderer`
+3. Present `NSSavePanel` with `UTType` 
+4. Write to selected location
+
+### Async File Operations
+Exports use async methods with `NSSavePanel`:
+```swift
+func save(suggestedName: String) async throws -> URL {
+    let savePanel = NSSavePanel()
+    // ... configure panel
+    guard let url = try await viewController(for: savePanel).result() else {
+        throw CancellationError()
+    }
+    try data.write(to: url)
+    return url
+}
+```
 
 ## 6. Build & Test
 
-- Open in Xcode: `open Writer.xcodeproj`
-- Build: Product → Build (⌘B)
-- Run: Product → Run (⌘R)
-- Test: Product → Test (⌘U)
+- **Open in Xcode**: `open Writer.xcodeproj`
+- **Build**: Product → Build (⌘B)
+- **Run**: Product → Run (⌘R)
+- **Test**: Product → Test (⌘U) or `xcodebuild test -destination 'platform=macOS'`
+
+### Running Tests
+```bash
+# All tests
+xcodebuild test -project Writer.xcodeproj -scheme Writer -destination 'platform=macOS'
+
+# Specific test class
+xcodebuild test -only-testing:WriterTests/EditorStoreTests
+
+# Specific test method
+xcodebuild test -only-testing:WriterTests/EditorStoreTests/testRefreshFilesFiltersFilesAndSelectsFirstEditableFile
+```
+
+### Test Structure
+Tests use `@MainActor` for store tests, `XCTestCase`:
+```swift
+@MainActor
+final class EditorStoreTests: XCTestCase {
+    override func setUpWithError() throws { ... }
+    
+    func testRefreshFilesFiltersFilesAndSelectsFirstEditableFile() throws {
+        let rootURL = try makeTemporaryWorkspace()
+        // ... test implementation
+    }
+    
+    private func makeTemporaryWorkspace() throws -> URL {
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        addTeardownBlock {
+            try? FileManager.default.removeItem(at: rootURL)
+        }
+        return rootURL
+    }
+}
+```
 
 ## 7. Important Notes
 
-- The app uses **AppKit integration** (NSPrintOperation, NSPasteboard, etc.)
-- **Security-scoped bookmarks** persist folder access
-- **WKWebView** is used for preview rendering
-- **Custom NSTextView** for markdown syntax highlighting
+- **AppKit integration**: Uses `NSPrintOperation`, `NSPasteboard`, `NSAlert` (required for macOS)
+- **WKWebView** is used for preview rendering (enables HTML/CSS preview)
+- **Custom NSTextView** subclass provides syntax highlighting via regex matching
+- **@testable import** is required in test files to access internal members
+- **No Swift Package**: This is an Xcode project, use `xcodebuild` not `swift test`
+
+## 8. Markdown Features Supported
+
+| Feature | Syntax | Notes |
+|---------|--------|-------|
+| Headings | `# H1` through `###### H6` | ATX style only |
+| Bold | `**text**` or `__text__` | Both forms supported |
+| Italic | `*text*` or `_text_` | Both forms supported |
+| Strikethrough | `~~text~~` | Renders as `<del>` |
+| Highlight | `==text==` | Custom extension, renders as `<mark>` |
+| Inline Code | `` `code` `` | Backticks |
+| Code Blocks | ` ```swift` | Language identifier supported |
+| Links | `[text](url)` | Standard markdown |
+| Images | `![alt](url)` | External URLs or local paths |
+| Tables | `| A | B |` | Pipe-style, auto-formatted |
+| Lists | `- item` or `1. item` | Ordered and unordered |
+| Blockquotes | `> quote` | Standard markdown |
+| Thematic Break | `---` | Horizontal rule |

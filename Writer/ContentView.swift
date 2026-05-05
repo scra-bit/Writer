@@ -253,54 +253,56 @@ struct ContentView: View {
         let isDropTarget = dropTargetURL == node.url && node.isDirectory
 
         if node.isDirectory {
-            let view = DisclosureGroup(
-                isExpanded: Binding(
-                    get: { editorStore.isExpanded(node.url) },
-                    set: { _ in editorStore.toggleExpansion(for: node.url) }
+            return AnyView(
+                DisclosureGroup(
+                    isExpanded: Binding(
+                        get: { editorStore.isExpanded(node.url) },
+                        set: { _ in editorStore.toggleExpansion(for: node.url) }
+                    )
+                ) {
+                    if let children = node.children {
+                        ForEach(children) { childNode in
+                            sidebarNodeRow(for: childNode, depth: depth + 1)
+                        }
+                    }
+                } label: {
+                    folderLabel(for: node, isRenaming: isRenaming, isDropTarget: isDropTarget)
+                }
+                .tag(Optional(node.url))
+                .contextMenu {
+                    folderContextMenu(for: node)
+                }
+                .dropDestination(
+                    for: URL.self,
+                    action: { urls, _ in
+                        handleDrop(urls: urls, onto: node.url)
+                        return true
+                    },
+                    isTargeted: { isTargeted in
+                        if isTargeted {
+                            dropTargetURL = node.url
+                        } else if dropTargetURL == node.url {
+                            dropTargetURL = nil
+                        }
+                    }
                 )
-            ) {
-                if let children = node.children {
-                    ForEach(children) { childNode in
-                        sidebarNodeRow(for: childNode, depth: depth + 1)
-                    }
-                }
-            } label: {
-                folderLabel(for: node, isRenaming: isRenaming, isDropTarget: isDropTarget)
-            }
-            .tag(Optional(node.url))
-            .contextMenu {
-                folderContextMenu(for: node)
-            }
-            .dropDestination(
-                for: URL.self,
-                action: { urls, _ in
-                    handleDrop(urls: urls, onto: node.url)
-                    return true
-                },
-                isTargeted: { isTargeted in
-                    if isTargeted {
-                        dropTargetURL = node.url
-                    } else if dropTargetURL == node.url {
-                        dropTargetURL = nil
-                    }
-                }
             )
-            return AnyView(view)
         }
 
-        let view = Group {
-            if isRenaming {
+        if isRenaming {
+            return AnyView(
                 renamingField(for: node)
                     .tag(Optional(node.url))
-            } else {
-                fileLabel(for: node)
-                    .tag(Optional(node.url))
-                    .contextMenu {
-                        fileContextMenu(for: node)
-                    }
-            }
+            )
         }
-        return AnyView(view)
+
+        return AnyView(
+            fileLabel(for: node)
+                .tag(Optional(node.url))
+                .contextMenu {
+                    fileContextMenu(for: node)
+                }
+        )
     }
 
     // MARK: - Labels and Views
@@ -544,15 +546,6 @@ struct ContentView: View {
         }
     }
 
-    @ViewBuilder
-    private func sidebarRow(for node: EditorStore.FileNode) -> some View {
-        if node.isDirectory {
-            Label(node.name, systemImage: "folder")
-        } else {
-            Label(node.name, systemImage: "doc.text")
-                .tag(Optional(node.url))
-        }
-    }
 }
 
 #Preview {

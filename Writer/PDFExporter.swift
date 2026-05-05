@@ -105,22 +105,21 @@ class PDFExporter: NSObject, WKNavigationDelegate {
         }
     }
 
-    /// Called if the HTML fails to load.
+    /// Called if the HTML fails to load or fails to start loading.
     nonisolated func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        Task { @MainActor in
-            self.continuation?.resume(throwing: error)
-            self.continuation = nil
-            self.webView = nil
-        }
+        Task { @MainActor in self.resume(with: error) }
     }
 
     /// Called if the HTML fails to even start loading.
     nonisolated func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-        Task { @MainActor in
-            self.continuation?.resume(throwing: error)
-            self.continuation = nil
-            self.webView = nil
-        }
+        Task { @MainActor in self.resume(with: error) }
+    }
+
+    @MainActor
+    private func resume(with error: Error) {
+        self.continuation?.resume(throwing: error)
+        self.continuation = nil
+        self.webView = nil
     }
 
     // MARK: - Print Pipeline
@@ -172,22 +171,22 @@ class PDFExporter: NSObject, WKNavigationDelegate {
         }
 
         guard success, let tempURL = self.tempURL else {
-            if let tempURL = self.tempURL {
-                try? FileManager.default.removeItem(at: tempURL)
-            }
             self.continuation?.resume(throwing: ExportError.writeFailed(
                 NSError(domain: "PDFExport", code: -1,
                         userInfo: [NSLocalizedDescriptionKey: "Print operation failed"])
             ))
+            if let tempURL = self.tempURL {
+                try? FileManager.default.removeItem(at: tempURL)
+            }
             return
         }
 
+        try? FileManager.default.removeItem(at: tempURL)
+
         do {
             let pdfData = try Data(contentsOf: tempURL)
-            try? FileManager.default.removeItem(at: tempURL)
             self.continuation?.resume(returning: pdfData)
         } catch {
-            try? FileManager.default.removeItem(at: tempURL)
             self.continuation?.resume(throwing: error)
         }
     }

@@ -34,6 +34,12 @@ struct TableFormatter {
     func detectTableRanges(in text: String) -> [(range: Range<String.Index>, lines: [String])] {
         let lines = text.components(separatedBy: .newlines)
         var tables: [(range: Range<String.Index>, lines: [String])] = []
+        
+        // Pre-compute line start offsets for O(1) range calculation
+        var lineStartOffsets: [Int] = [0]
+        for line in lines.dropLast() {
+            lineStartOffsets.append(lineStartOffsets.last! + line.count + 1) // +1 for newline
+        }
 
         var i = 0
         while i < lines.count {
@@ -55,7 +61,7 @@ struct TableFormatter {
 
             // Found delimiter - collect all table rows
             var tableLines: [String] = [lines[i], lines[i + 1]]
-            var startIndex = i
+            let startIndex = i
             i += 2
 
             // Continue collecting table rows until we hit a non-table row
@@ -64,8 +70,8 @@ struct TableFormatter {
                 i += 1
             }
 
-            // Calculate the range in the original text
-            let startCharIndex = lines[0..<startIndex].joined(separator: "\n").count + (startIndex > 0 ? 1 : 0)
+            // Calculate the range using pre-computed offsets
+            let startCharIndex = lineStartOffsets[startIndex]
             let tableText = tableLines.joined(separator: "\n")
             let start = text.index(text.startIndex, offsetBy: startCharIndex)
             let end = text.index(start, offsetBy: tableText.count)
@@ -189,20 +195,23 @@ struct TableFormatter {
 
     /// Checks if a Unicode scalar is a wide character (CJK, emoji, etc.).
     private func isWideCharacter(_ scalar: Unicode.Scalar) -> Bool {
-        // CJK Unified Ideographs
-        if scalar.value >= 0x4E00 && scalar.value <= 0x9FFF { return true }
-        // CJK Extension A
-        if scalar.value >= 0x3400 && scalar.value <= 0x4DBF { return true }
-        // CJK Extension B
-        if scalar.value >= 0x20000 && scalar.value <= 0x2A6DF { return true }
+        // Check East Asian Wide and Fullwidth character ranges
+        // CJK Unified Ideographs and extensions
+        let value = scalar.value
+        
+        // CJK Unified Ideographs (U+4E00–U+9FFF)
+        if value >= 0x4E00 && value <= 0x9FFF { return true }
+        // CJK Extensions A (U+3400–U+4DBF), B (U+20000–U+2A6DF)
+        if value >= 0x3400 && value <= 0x4DBF { return true }
+        if value >= 0x20000 && value <= 0x2A6DF { return true }
         // Hiragana, Katakana, Hangul
-        if scalar.value >= 0x3040 && scalar.value <= 0x309F { return true }
-        if scalar.value >= 0x30A0 && scalar.value <= 0x30FF { return true }
-        if scalar.value >= 0xAC00 && scalar.value <= 0xD7AF { return true }
-        // Emoji and symbols
-        if scalar.value >= 0x1F300 && scalar.value <= 0x1F9FF { return true }
-        // Fullwidth forms
-        if scalar.value >= 0xFF00 && scalar.value <= 0xFFEF { return true }
+        if value >= 0x3040 && value <= 0x30FF { return true }  // Hiragana + Katakana
+        if value >= 0xAC00 && value <= 0xD7AF { return true }  // Hangul Syllables
+        // Emoji and symbols (U+1F300–U+1F9FF)
+        if value >= 0x1F300 && value <= 0x1F9FF { return true }
+        // Fullwidth forms (U+FF00–U+FFEF)
+        if value >= 0xFF00 && value <= 0xFFEF { return true }
+        
         return false
     }
 
