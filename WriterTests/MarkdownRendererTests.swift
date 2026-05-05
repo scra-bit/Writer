@@ -104,6 +104,98 @@ final class MarkdownRendererTests: XCTestCase {
         XCTAssertFalse(html.contains("content-block"), html)
     }
 
+    func testRenderBodyContentRendersTableOfContentsFromTOC() {
+        let markdown = """
+        {{TOC}}
+
+        # Introduction
+
+        ## Background
+
+        ### Details
+
+        ## Conclusion
+        """
+
+        let html = MarkdownRenderer.renderBodyContent(markdown)
+
+        XCTAssertTrue(html.contains("<nav class=\"toc\">"), html)
+        XCTAssertTrue(html.contains("<a href=\"#heading-1-introduction\">Introduction</a>"), html)
+        XCTAssertTrue(html.contains("<a href=\"#heading-2-background\">Background</a>"), html)
+        XCTAssertTrue(html.contains("<a href=\"#heading-3-details\">Details</a>"), html)
+        XCTAssertTrue(html.contains("<a href=\"#heading-2-conclusion\">Conclusion</a>"), html)
+    }
+
+    func testRenderBodyContentTOCLinksMatchHeadingIDs() {
+        let markdown = """
+        {{TOC}}
+
+        # First Heading
+
+        # Second Heading
+        """
+
+        let html = MarkdownRenderer.renderBodyContent(markdown)
+
+        // Check heading IDs are present
+        XCTAssertTrue(html.contains("id=\"heading-1-first-heading\""), html)
+        XCTAssertTrue(html.contains("id=\"heading-1-second-heading-2\""), html)
+
+        // Check TOC links match
+        XCTAssertTrue(html.contains("href=\"#heading-1-first-heading\""), html)
+        XCTAssertTrue(html.contains("href=\"#heading-1-second-heading-2\""), html)
+    }
+
+    func testRenderBodyContentTOCWithNestedHeadings() {
+        let markdown = """
+        {{TOC}}
+
+        # Chapter 1
+
+        ## Section 1.1
+
+        ### Subsection 1.1.1
+
+        ## Section 1.2
+
+        # Chapter 2
+        """
+
+        let html = MarkdownRenderer.renderBodyContent(markdown)
+
+        XCTAssertTrue(html.contains("<nav class=\"toc\">"), html)
+        // Check nested list structure
+        XCTAssertTrue(html.contains("<ul>"), html)
+        XCTAssertTrue(html.contains("</ul>"), html)
+    }
+
+    func testRenderBodyContentTOCWithNoHeadings() {
+        let markdown = """
+        {{TOC}}
+
+        Just some text without headings.
+        """
+
+        let html = MarkdownRenderer.renderBodyContent(markdown)
+
+        XCTAssertTrue(html.contains("<!-- No headings found for TOC -->"), html)
+    }
+
+    func testRenderBodyContentTOCWithSpecialCharactersInHeading() {
+        let markdown = """
+        {{TOC}}
+
+        # Hello World!
+
+        # Code `example`
+        """
+
+        let html = MarkdownRenderer.renderBodyContent(markdown)
+
+        XCTAssertTrue(html.contains("id=\"heading-1-hello-world\""), html)
+        XCTAssertTrue(html.contains("id=\"heading-1-code-example\""), html)
+    }
+
     private func makeTemporaryWorkspace() throws -> URL {
         let rootURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: rootURL, withIntermediateDirectories: true)

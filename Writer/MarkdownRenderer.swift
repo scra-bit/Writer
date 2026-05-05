@@ -280,11 +280,18 @@ private enum ContentBlockKind {
 private enum RenderSegment {
     case markdown(String)
     case contentBlock(ContentBlockSyntax.ResolvedContentBlock)
+    case tableOfContents
 }
 
 // Custom MarkupVisitor to generate HTML
 struct HTMLVisitor: MarkupVisitor {
     typealias Result = String
+
+    /// When enabled, headings will include id attributes for TOC linking
+    var generateHeadingIDs = false
+
+    /// Pre-computed heading slugs from TOC collection, keyed by (level, text)
+    var headingSlugs: [String: String] = [:]
 
     private func escapeText(_ text: String) -> String {
         text
@@ -310,6 +317,13 @@ struct HTMLVisitor: MarkupVisitor {
     mutating func visitHeading(_ heading: Heading) -> String {
         let level = heading.level
         let content = heading.children.map { $0.accept(&self) }.joined()
+
+        if generateHeadingIDs {
+            // Try to find the pre-computed slug, otherwise generate one
+            let key = "\(level):\(content)"
+            let slug = headingSlugs[key] ?? HeadingInfo.generateSlug(for: content, level: level, occurrence: 1)
+            return "<h\(level) id=\"\(slug)\">\(content)</h\(level)>\n"
+        }
         return "<h\(level)>\(content)</h\(level)>\n"
     }
 
@@ -424,6 +438,96 @@ struct HTMLVisitor: MarkupVisitor {
     }
 }
 
+/// Represents a heading extracted from markdown for TOC generation
+struct HeadingInfo {
+    let level: Int
+    let text: String
+    let slug: String
+
+    static func generateSlug(for text: String, level: Int, occurrence: Int) -> String {
+        // Remove HTML tags and markdown formatting to get plain text
+        var plainText = text
+            .replacingOccurrences(of: "</?\\w+[^>]*>", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "**", with: "")
+            .replacingOccurrences(of: "*", with: "")
+            .replacingOccurrences(of: "_", with: "")
+            .replacingOccurrences(of: "`", with: "")
+            .lowercased()
+
+        // Replace spaces and special chars with hyphens
+        var slug = ""
+        for char in plainText {
+            if char.isLetter || char.isNumber {
+                slug.append(char)
+            } else if char.isWhitespace {
+                slug.append("-")
+            }
+        }
+
+        // Remove consecutive hyphens and trim
+        while slug.contains("--") {
+            slug = slug.replacingOccurrences(of: "--", with: "-")
+        }
+        slug = slug.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+
+        // Format: heading-{level}-{slug} or heading-{level}-{slug}-{occurrence} for duplicates
+        return "heading-\(level)-\(slug)\(occurrence > 1 ? "-\\(occurrence)" : "")"
+    }
+}
+
+/// Visitor to extract all headings from a markdown document for TOC generation
+struct TOCCollector: MarkupVisitor {
+    typealias Result = String
+
+    private var headings: [HeadingInfo] = []
+    private var currentText: String = ""
+
+    mutating func defaultVisit(_ markup: Markup) -> String {
+        for child in markup.children {
+            currentText += child.accept(&self)
+        }
+        return currentText
+    }
+
+    mutating func visitDocument(_ document: Document) -> String {
+        for child in document.children {
+            _ = child.accept(&self)
+        }
+        return ""
+    }
+
+    mutating func visitHeading(_ heading: Heading) -> String {
+        let savedText = currentText
+        currentText = ""
+
+        // Visit children to get heading text
+        for child in heading.children {
+            currentText += child.accept(&self)
+        }
+
+        let text = currentText
+        currentText = savedText
+
+        // Count occurrences at this level for generating unique slugs
+        let occurrence = (headings.filter { $0.level == heading.level }.count + 1)
+        let slug = HeadingInfo.generateSlug(for: text, level: heading.level, occurrence: occurrence)
+
+        headings.append(HeadingInfo(level: heading.level, text: text, slug: slug))
+        return ""
+    }
+
+    mutating func visitText(_ text: Markdown.Text) -> String {
+        text.string
+    }
+
+    /// Returns the collected headings
+    mutating func collectHeadings() -> [HeadingInfo] {
+        let result = headings
+        headings.removeAll()
+        return result
+    }
+}
+
 /// Renders markdown to HTML
 struct MarkdownRenderer {
     private static nonisolated(unsafe) var _highlightRegex: NSRegularExpression? = {
@@ -489,16 +593,115 @@ struct MarkdownRenderer {
         context: MarkdownRenderContext,
         visitedURLs: Set<URL>
     ) -> String {
+        // First, collect all headings for TOC
+        let allHeadings = collectAllHeadings(from: markdown, context: context, visitedURLs: visitedURLs)
+
+        // Then render segments, using the collected headings for TOC
         let segments = parseSegments(markdown, context: context)
 
         return segments.map { segment in
             switch segment {
             case .markdown(let markdownChunk):
-                return renderMarkdownChunk(markdownChunk)
+                return renderMarkdownChunk(markdownChunk, tocHeadings: allHeadings)
             case .contentBlock(let block):
                 return renderContentBlock(block, context: context, visitedURLs: visitedURLs)
+            case .tableOfContents:
+                return renderTableOfContents(allHeadings)
             }
         }.joined()
+    }
+
+    /// Collects all headings from the markdown, including from transcluded content blocks
+    private static func collectAllHeadings(
+        from markdown: String,
+        context: MarkdownRenderContext,
+        visitedURLs: Set<URL>
+    ) -> [HeadingInfo] {
+        let segments = parseSegments(markdown, context: context)
+        var allHeadings: [HeadingInfo] = []
+
+        for segment in segments {
+            switch segment {
+            case .markdown(let markdownChunk):
+                let headings = extractHeadings(from: markdownChunk)
+                allHeadings.append(contentsOf: headings)
+            case .contentBlock(let block):
+                if let url = block.url, !visitedURLs.contains(url) {
+                    let headings = extractHeadingsFromContentBlock(block, context: context, visitedURLs: visitedURLs)
+                    allHeadings.append(contentsOf: headings)
+                }
+            case .tableOfContents:
+                break // Skip TOC marker itself
+            }
+        }
+
+        return allHeadings
+    }
+
+    /// Extracts headings from a markdown chunk
+    private static func extractHeadings(from markdownChunk: String) -> [HeadingInfo] {
+        guard !markdownChunk.isEmpty else { return [] }
+        let escaped = escapeHTMLEntities(markdownChunk)
+        let document = Document(parsing: escaped)
+        var collector = TOCCollector()
+        _ = document.accept(&collector)
+        return collector.collectHeadings()
+    }
+
+    /// Extracts headings from a content block file
+    private static func extractHeadingsFromContentBlock(
+        _ resolvedBlock: ContentBlockSyntax.ResolvedContentBlock,
+        context: MarkdownRenderContext,
+        visitedURLs: Set<URL>
+    ) -> [HeadingInfo] {
+        guard let url = resolvedBlock.url else { return [] }
+
+        let nestedContext = MarkdownRenderContext(
+            documentURL: url,
+            workspaceRootURL: context.workspaceRootURL ?? context.documentURL?.deletingLastPathComponent()
+        )
+
+        switch classifyContentBlock(url: url) {
+        case .transcludedMarkdown:
+            guard let contents = try? String(contentsOf: url, encoding: .utf8) else { return [] }
+            let nestedHTML = collectAllHeadings(from: contents, context: nestedContext, visitedURLs: visitedURLs.union([url]))
+            return nestedHTML
+        default:
+            return []
+        }
+    }
+
+    /// Renders the TOC as a nested unordered list
+    private static func renderTableOfContents(_ headings: [HeadingInfo]) -> String {
+        guard !headings.isEmpty else {
+            return "<!-- No headings found for TOC -->\n"
+        }
+
+        var html = "<nav class=\"toc\">\n<ul>\n"
+        var lastLevel = 1
+
+        for heading in headings {
+            // Adjust nesting based on heading level
+            while heading.level > lastLevel {
+                html += "<ul>\n"
+                lastLevel += 1
+            }
+            while heading.level < lastLevel {
+                html += "</ul>\n"
+                lastLevel -= 1
+            }
+
+            html += "<li><a href=\"#\(heading.slug)\">\(heading.text)</a></li>\n"
+        }
+
+        // Close any open lists
+        while lastLevel > 1 {
+            html += "</ul>\n"
+            lastLevel -= 1
+        }
+
+        html += "</ul>\n</nav>\n"
+        return html
     }
 
     private static func parseSegments(
@@ -516,7 +719,11 @@ struct MarkdownRenderer {
         }
 
         for line in lines {
-            if let match = ContentBlockSyntax.parseLine(line) {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed == "{{TOC}}" {
+                flushMarkdown()
+                segments.append(.tableOfContents)
+            } else if let match = ContentBlockSyntax.parseLine(line) {
                 flushMarkdown()
                 segments.append(.contentBlock(ContentBlockSyntax.resolve(match, context: context)))
             } else {
@@ -528,7 +735,7 @@ struct MarkdownRenderer {
         return segments
     }
 
-    private static func renderMarkdownChunk(_ markdown: String) -> String {
+    private static func renderMarkdownChunk(_ markdown: String, tocHeadings: [HeadingInfo]) -> String {
         guard !markdown.isEmpty else {
             return ""
         }
@@ -536,8 +743,22 @@ struct MarkdownRenderer {
         let escaped = escapeHTMLEntities(markdown)
         let document = Document(parsing: escaped)
         var visitor = HTMLVisitor()
+        visitor.generateHeadingIDs = !tocHeadings.isEmpty
+
+        // Build a dictionary of heading slugs from TOC headings
+        var headingSlugs: [String: String] = [:]
+        for heading in tocHeadings {
+            headingSlugs["\(heading.level):\(heading.text)"] = heading.slug
+        }
+        visitor.headingSlugs = headingSlugs
+
         let html = document.accept(&visitor)
         return processHighlights(html)
+    }
+
+    /// Legacy overload for backward compatibility
+    private static func renderMarkdownChunk(_ markdown: String) -> String {
+        renderMarkdownChunk(markdown, tocHeadings: [])
     }
 
     private static func renderContentBlock(
