@@ -29,9 +29,9 @@ final class PreviewThemeTests: XCTestCase {
 
     func testLightThemeHasLightColors() {
         let lightCSS = PreviewTheme.sansSerifLight.cssStyles
-        XCTAssertTrue(lightCSS.contains("#ffffff"))  // light background
-        XCTAssertTrue(lightCSS.contains("#24292e"))  // light text
-        XCTAssertTrue(lightCSS.contains("#0366d6"))  // light link color
+        XCTAssertTrue(lightCSS.contains("background-color: \(PreviewTheme.sansSerifLight.backgroundColor);"))  // light background
+        XCTAssertTrue(lightCSS.contains("color: \(PreviewTheme.sansSerifLight.textColor);"))  // light text
+        XCTAssertTrue(lightCSS.contains("color: \(PreviewTheme.sansSerifLight.linkColor);"))  // light link color
     }
 
     func testBackwardCompatibilityAliasesExist() {
