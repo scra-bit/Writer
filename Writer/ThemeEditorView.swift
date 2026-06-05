@@ -21,10 +21,7 @@ struct ThemeEditorView: View {
             // Typography Theme Picker
             Picker(
                 "Typography",
-                selection: Binding(
-                    get: { themeStore.previewTheme.name },
-                    set: { _ in }  // Selection doesn't change - both use sans-serif
-                )
+                selection: Binding.constant("Sans Serif")
             ) {
                 Text("Sans Serif").tag("Sans Serif")
             }
