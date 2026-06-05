@@ -3,6 +3,7 @@ import Foundation
 
 struct PreviewTheme: Hashable {
     let name: String
+    let colorMode: ColorMode
 
     // Typography
     let bodyFontFamily: String
@@ -18,14 +19,22 @@ struct PreviewTheme: Hashable {
     let codeBackgroundColor: String
     let borderColor: String
     let secondaryTextColor: String
+
+    enum ColorMode {
+        case light
+        case dark
+    }
 }
 
 extension PreviewTheme {
-    // Sans Serif Theme (default)
-    static let sansSerif = PreviewTheme(
+    // Sans Serif Light Theme (default)
+    static let sansSerifLight = PreviewTheme(
         name: "Sans Serif",
-        bodyFontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif",
-        headingFontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        colorMode: .light,
+        bodyFontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif",
+        headingFontFamily:
+            "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         codeFontFamily: "'SF Mono', Menlo, Monaco, 'Courier New', monospace",
         baseFontSize: 16,
         lineHeight: 1.6,
@@ -37,9 +46,29 @@ extension PreviewTheme {
         secondaryTextColor: "#6a737d"
     )
 
-    // Serif Theme
-    static let serif = PreviewTheme(
+    // Sans Serif Dark Theme
+    static let sansSerifDark = PreviewTheme(
+        name: "Sans Serif",
+        colorMode: .dark,
+        bodyFontFamily:
+            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif",
+        headingFontFamily:
+            "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        codeFontFamily: "'SF Mono', Menlo, Monaco, 'Courier New', monospace",
+        baseFontSize: 16,
+        lineHeight: 1.6,
+        backgroundColor: "#0d1117",
+        textColor: "#c9d1d9",
+        linkColor: "#58a6ff",
+        codeBackgroundColor: "#161b22",
+        borderColor: "#30363d",
+        secondaryTextColor: "#8b949e"
+    )
+
+    // Serif Light Theme
+    static let serifLight = PreviewTheme(
         name: "Serif",
+        colorMode: .light,
         bodyFontFamily: "Georgia, 'Times New Roman', Times, serif",
         headingFontFamily: "Georgia, 'Times New Roman', Times, serif",
         codeFontFamily: "'SF Mono', Menlo, Monaco, 'Courier New', monospace",
@@ -52,8 +81,32 @@ extension PreviewTheme {
         borderColor: "#e1e4e8",
         secondaryTextColor: "#6a737d"
     )
+
+    // Serif Dark Theme
+    static let serifDark = PreviewTheme(
+        name: "Serif",
+        colorMode: .dark,
+        bodyFontFamily: "Georgia, 'Times New Roman', Times, serif",
+        headingFontFamily: "Georgia, 'Times New Roman', Times, serif",
+        codeFontFamily: "'SF Mono', Menlo, Monaco, 'Courier New', monospace",
+        baseFontSize: 16,
+        lineHeight: 1.6,
+        backgroundColor: "#0d1117",
+        textColor: "#c9d1d9",
+        linkColor: "#58a6ff",
+        codeBackgroundColor: "#161b22",
+        borderColor: "#30363d",
+        secondaryTextColor: "#8b949e"
+    )
+
+    // Default theme (light for backward compatibility)
+    static let sansSerif = sansSerifLight
+    static let serif = serifLight
+
     // All available themes
-    static let allThemes: [PreviewTheme] = [.sansSerif, .serif]
+    static let allThemes: [PreviewTheme] = [
+        .sansSerifLight, .sansSerifDark, .serifLight, .serifDark,
+    ]
 }
 
 extension PreviewTheme {
@@ -183,6 +236,15 @@ extension PreviewTheme {
         }
         .content-block-warning p {
             margin-bottom: 12px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .content-block-warning {
+                color: #e6b547;
+                background: #2b2000;
+                border: 1px solid #b38f00;
+                border-color: #b38f00;
+            }
         }
         /* Print-optimized styles for PDF export pagination */
         @media print {

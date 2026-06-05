@@ -147,11 +147,11 @@ struct ContentView: View {
                     documentURL: editorStore.currentDocumentURL,
                     workspaceRootURL: editorStore.rootURL
                 )
-                    .frame(
-                        width: min(800, geometry.size.width * 0.85),
-                        height: geometry.size.height,
-                        alignment: .center
-                    )
+                .frame(
+                    width: min(800, geometry.size.width * 0.85),
+                    height: geometry.size.height,
+                    alignment: .center
+                )
 
                 Spacer()
             }
@@ -171,7 +171,6 @@ struct ContentView: View {
     private var previewContainer: some View {
         WebView(
             markdown: editorStore.documentText,
-            theme: themeStore.previewTheme,
             renderContext: MarkdownRenderContext(
                 documentURL: editorStore.currentDocumentURL,
                 workspaceRootURL: editorStore.rootURL

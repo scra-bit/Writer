@@ -1,14 +1,13 @@
+import Observation
 //   Writer is Copyright (C) 2026  Emmett Buck-Thompson and Contributors
 import SwiftUI
 import WebKit
-import Observation
 
 struct WebView: View {
     let markdown: String
-    let theme: PreviewTheme
     let renderContext: MarkdownRenderContext
     @Environment(ThemeStore.self) private var themeStore
-    
+
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             WebViewRepresentable(
@@ -19,9 +18,9 @@ struct WebView: View {
         }
         .overlay(alignment: .bottomTrailing) {
             Menu {
-                ForEach(PreviewTheme.allThemes, id: \.name) { themeOption in
-                    Button(themeOption.name) {
-                        themeStore.previewTheme = themeOption
+                ForEach(ThemeStore.PreviewColorScheme.allCases, id: \.self) { scheme in
+                    Button(scheme.title) {
+                        themeStore.previewColorScheme = scheme
                     }
                 }
             } label: {
@@ -45,16 +44,17 @@ struct WebViewRepresentable: NSViewRepresentable {
     let markdown: String
     let theme: PreviewTheme
     let renderContext: MarkdownRenderContext
-    
+
     func makeNSView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.preferences.setValue(true, forKey: "developerExtrasEnabled")
-        
+
         let webView = WKWebView(frame: .zero, configuration: configuration)
-        webView.setValue(NSColor.white, forKey: "backgroundColor")
+        // Background color will be set by CSS, but we set the webView's background to match
+        webView.setValue(NSColor.windowBackgroundColor, forKey: "backgroundColor")
         return webView
     }
-    
+
     func updateNSView(_ webView: WKWebView, context: Context) {
         let bodyContent = MarkdownRenderer.renderBodyContent(markdown, context: renderContext)
         let html = MarkdownRenderer.wrapInHTMLDocument(bodyContent, theme: theme)
