@@ -3,8 +3,6 @@
 //  Writer
 //
 
-//
-
 import SwiftUI
 
 struct ThemeEditorView: View {
@@ -12,12 +10,26 @@ struct ThemeEditorView: View {
 
     var body: some View {
         Form {
-            // Typography Theme Picker
-            Picker("Typography", selection: Bindable(themeStore).previewTheme) {
-                ForEach(PreviewTheme.allThemes, id: \.name) { theme in
-                    Text(theme.name).tag(theme)
+            // Color Scheme Picker
+            Picker("Color Scheme", selection: Bindable(themeStore).previewColorScheme) {
+                ForEach(ThemeStore.PreviewColorScheme.allCases, id: \.self) { scheme in
+                    Text(scheme.title).tag(scheme)
                 }
             }
+            .pickerStyle(.segmented)
+
+            // Typography Theme Picker
+            Picker(
+                "Typography",
+                selection: Binding(
+                    get: { themeStore.previewTheme.name },
+                    set: { _ in }  // Selection doesn't change - both use sans-serif
+                )
+            ) {
+                Text("Sans Serif").tag("Sans Serif")
+            }
+            .disabled(true)
+            .help("Additional typography options coming soon")
 
             HStack {
                 Text("Base Font Size")

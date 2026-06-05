@@ -3,8 +3,8 @@
 //  Writer
 //
 
-import SwiftUI
 import AppKit
+import SwiftUI
 
 struct MarkdownTextView: NSViewRepresentable {
     @Binding var text: String
@@ -37,10 +37,14 @@ struct MarkdownTextView: NSViewRepresentable {
             workspaceRootURL: workspaceRootURL
         )
 
+        // Apply appearance-aware colors
+        updateAppearanceColors(for: textView)
+
         textView.applyBaseTypingAttributes()
 
         // Set the text view as the document view
         scrollView.documentView = textView
+        scrollView.backgroundColor = NSColor.windowBackgroundColor
 
         // Set initial text
         textView.string = text
@@ -54,7 +58,7 @@ struct MarkdownTextView: NSViewRepresentable {
 
         // Track if we need to apply styling
         var needsStyling = false
-        
+
         // Only update if text changed from outside (not from typing)
         if textView.string != text {
             let selectedRange = textView.selectedRange()
@@ -75,9 +79,21 @@ struct MarkdownTextView: NSViewRepresentable {
             textView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
             needsStyling = true
         }
-        
+
+        // Update appearance colors
+        updateAppearanceColors(for: textView)
+
         if needsStyling {
             textView.applyMarkdownStyling()
+        }
+    }
+
+    private func updateAppearanceColors(for textView: MarkdownTextViewInternal) {
+        textView.drawsBackground = true
+        textView.backgroundColor = .textBackgroundColor
+        textView.textColor = .labelColor
+        if let scrollView = textView.enclosingScrollView {
+            scrollView.backgroundColor = .windowBackgroundColor
         }
     }
 
@@ -105,7 +121,6 @@ class MarkdownTextViewInternal: NSTextView {
     private var isApplyingStyling = false
     var renderContext = MarkdownRenderContext()
 
-
     // Cached regexes to avoid recompilation on every text change
     private static let headingRegex = try? NSRegularExpression(
         pattern: "^#{1,6}\\s.*$",
@@ -116,11 +131,13 @@ class MarkdownTextViewInternal: NSTextView {
         options: []
     )
     private static let boldRegex = try? NSRegularExpression(
-        pattern: "(?<!\\*)(\\*\\*(?=[^\\s*\\n])(.+?)(?<=[^\\s*\\n])\\*\\*(?!\\*)|(?<!_)__(?=[^\\s_\\n])(.+?)(?<=[^\\s_\\n])__(?!_))",
+        pattern:
+            "(?<!\\*)(\\*\\*(?=[^\\s*\\n])(.+?)(?<=[^\\s*\\n])\\*\\*(?!\\*)|(?<!_)__(?=[^\\s_\\n])(.+?)(?<=[^\\s_\\n])__(?!_))",
         options: []
     )
     private static let italicRegex = try? NSRegularExpression(
-        pattern: "(?<!\\*)(\\*(?=[^\\s*\\n])(.+?)(?<=[^\\s*\\n])\\*(?!\\*)|(?<!_)_(?=[^\\s_\\n])(.+?)(?<=[^\\s_\\n])_(?!_))",
+        pattern:
+            "(?<!\\*)(\\*(?=[^\\s*\\n])(.+?)(?<=[^\\s*\\n])\\*(?!\\*)|(?<!_)_(?=[^\\s_\\n])(.+?)(?<=[^\\s_\\n])_(?!_))",
         options: []
     )
     private static let strikethroughRegex = try? NSRegularExpression(
@@ -158,7 +175,7 @@ class MarkdownTextViewInternal: NSTextView {
         // Reset to default attributes
         let baseFont = font ?? NSFont.monospacedSystemFont(ofSize: 16, weight: .regular)
         let baseParagraphStyle = baseParagraphStyle(for: baseFont)
-        
+
         // Batch attribute updates for better performance
         textStorage.beginEditing()
         textStorage.removeAttribute(.foregroundColor, range: fullRange)
@@ -203,7 +220,8 @@ class MarkdownTextViewInternal: NSTextView {
     ) {
         guard let regex = Self.headingRegex else { return }
 
-        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+        let matches = regex.matches(
+            in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
         let nsText = text as NSString
         let boldFont = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold)
         let bodyTextHeadIndent = baseParagraphStyle.headIndent
@@ -266,15 +284,20 @@ class MarkdownTextViewInternal: NSTextView {
         typingAttributes[.paragraphStyle] = paragraphStyle
     }
 
-    private func applyBoldItalicStyles(to textStorage: NSTextStorage, text: String, baseFont: NSFont) {
+    private func applyBoldItalicStyles(
+        to textStorage: NSTextStorage, text: String, baseFont: NSFont
+    ) {
         guard let regex = Self.boldItalicRegex else { return }
 
-        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+        let matches = regex.matches(
+            in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
 
         for match in matches {
-            let boldDesc = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold).fontDescriptor
+            let boldDesc = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold)
+                .fontDescriptor
             let boldItalicDesc = boldDesc.withSymbolicTraits([.bold, .italic])
-            let boldItalicFont = NSFont(descriptor: boldItalicDesc, size: baseFont.pointSize)
+            let boldItalicFont =
+                NSFont(descriptor: boldItalicDesc, size: baseFont.pointSize)
                 ?? NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold)
             textStorage.addAttribute(.font, value: boldItalicFont, range: match.range)
         }
@@ -283,7 +306,8 @@ class MarkdownTextViewInternal: NSTextView {
     private func applyBoldStyles(to textStorage: NSTextStorage, text: String, baseFont: NSFont) {
         guard let regex = Self.boldRegex else { return }
 
-        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+        let matches = regex.matches(
+            in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
         let boldFont = NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold)
 
         for match in matches {
@@ -294,11 +318,15 @@ class MarkdownTextViewInternal: NSTextView {
     private func applyItalicStyles(to textStorage: NSTextStorage, text: String, baseFont: NSFont) {
         guard let regex = Self.italicRegex else { return }
 
-        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+        let matches = regex.matches(
+            in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
 
         for match in matches {
             // Apply italic - bold-italic already handled, so no need to check
-            if let italicFont = NSFont(descriptor: baseFont.fontDescriptor.withSymbolicTraits(.italic), size: baseFont.pointSize) {
+            if let italicFont = NSFont(
+                descriptor: baseFont.fontDescriptor.withSymbolicTraits(.italic),
+                size: baseFont.pointSize)
+            {
                 textStorage.addAttribute(.font, value: italicFont, range: match.range)
             }
         }
@@ -307,20 +335,29 @@ class MarkdownTextViewInternal: NSTextView {
     private func applyStrikethroughStyles(to textStorage: NSTextStorage, text: String) {
         guard let regex = Self.strikethroughRegex else { return }
 
-        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+        let matches = regex.matches(
+            in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
 
+        // secondaryLabelColor works automatically in both light/dark modes
         for match in matches {
-            textStorage.addAttribute(.strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: match.range)
-            textStorage.addAttribute(.foregroundColor, value: NSColor.secondaryLabelColor, range: match.range)
+            textStorage.addAttribute(
+                .strikethroughStyle, value: NSUnderlineStyle.single.rawValue, range: match.range)
+            textStorage.addAttribute(
+                .foregroundColor, value: NSColor.secondaryLabelColor, range: match.range)
         }
     }
 
     private func applyHighlightStyles(to textStorage: NSTextStorage, text: String) {
         guard let regex = Self.highlightRegex else { return }
 
-        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
+        let matches = regex.matches(
+            in: text, options: [], range: NSRange(location: 0, length: text.utf16.count))
 
-        let highlightColor = NSColor.systemYellow.withAlphaComponent(0.3)
+        // Use a highlight color that works in both light and dark modes
+        let highlightColor =
+            effectiveAppearance.isDarkMode
+            ? NSColor.systemYellow.withAlphaComponent(0.4)
+            : NSColor.systemYellow.withAlphaComponent(0.3)
 
         for match in matches {
             textStorage.addAttribute(.backgroundColor, value: highlightColor, range: match.range)
@@ -333,7 +370,8 @@ class MarkdownTextViewInternal: NSTextView {
         let fullLength = nsText.length
 
         while searchLocation < fullLength {
-            let paragraphRange = nsText.paragraphRange(for: NSRange(location: searchLocation, length: 0))
+            let paragraphRange = nsText.paragraphRange(
+                for: NSRange(location: searchLocation, length: 0))
             let line = nsText.substring(with: paragraphRange)
                 .trimmingCharacters(in: .newlines)
 
@@ -345,7 +383,8 @@ class MarkdownTextViewInternal: NSTextView {
             let resolved = ContentBlockSyntax.resolve(match, context: renderContext)
             let color: NSColor = resolved.url == nil ? .systemOrange : .systemBlue
             textStorage.addAttribute(.foregroundColor, value: color, range: paragraphRange)
-            textStorage.addAttribute(.backgroundColor, value: color.withAlphaComponent(0.08), range: paragraphRange)
+            textStorage.addAttribute(
+                .backgroundColor, value: color.withAlphaComponent(0.08), range: paragraphRange)
 
             searchLocation = NSMaxRange(paragraphRange)
         }
