@@ -554,11 +554,15 @@ struct ContentView: View {
 private struct ContentViewPreview: View {
     @State private var editorStore = EditorStore()
     @State private var themeStore = ThemeStore()
+    @State private var layoutStore = LayoutStore()
+    @State private var commandPaletteStore = CommandPaletteStore()
 
     var body: some View {
         ContentView()
             .environment(editorStore)
             .environment(themeStore)
+            .environment(layoutStore)
+            .environment(commandPaletteStore)
             .frame(width: 1100, height: 700)
     }
 }
