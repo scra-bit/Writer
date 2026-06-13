@@ -172,7 +172,7 @@ class MarkdownTextViewInternal: NSTextView {
         let fullRange = NSRange(location: 0, length: textStorage.length)
         let text = textStorage.string
 
-        // Reset to default attributes
+        // Reset to default attributes with proper dark mode colors
         let baseFont = font ?? NSFont.monospacedSystemFont(ofSize: 16, weight: .regular)
         let baseParagraphStyle = baseParagraphStyle(for: baseFont)
 
@@ -183,7 +183,10 @@ class MarkdownTextViewInternal: NSTextView {
         textStorage.removeAttribute(.backgroundColor, range: fullRange)
         textStorage.removeAttribute(.strikethroughStyle, range: fullRange)
         textStorage.removeAttribute(.paragraphStyle, range: fullRange)
+
+        // Set default text color that respects appearance (labelColor works in both light/dark)
         textStorage.addAttribute(.font, value: baseFont, range: fullRange)
+        textStorage.addAttribute(.foregroundColor, value: NSColor.labelColor, range: fullRange)
         textStorage.addAttribute(.paragraphStyle, value: baseParagraphStyle, range: fullRange)
 
         // Apply heading styles (# Heading)
@@ -240,6 +243,8 @@ class MarkdownTextViewInternal: NSTextView {
             )
 
             textStorage.addAttribute(.font, value: boldFont, range: match.range)
+            textStorage.addAttribute(
+                .foregroundColor, value: NSColor.labelColor, range: match.range)
             textStorage.addAttribute(.paragraphStyle, value: paragraphStyle, range: paragraphRange)
         }
     }
@@ -282,6 +287,7 @@ class MarkdownTextViewInternal: NSTextView {
         defaultParagraphStyle = paragraphStyle
         typingAttributes[.font] = baseFont
         typingAttributes[.paragraphStyle] = paragraphStyle
+        typingAttributes[.foregroundColor] = NSColor.labelColor
     }
 
     private func applyBoldItalicStyles(
@@ -300,6 +306,8 @@ class MarkdownTextViewInternal: NSTextView {
                 NSFont(descriptor: boldItalicDesc, size: baseFont.pointSize)
                 ?? NSFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .bold)
             textStorage.addAttribute(.font, value: boldItalicFont, range: match.range)
+            textStorage.addAttribute(
+                .foregroundColor, value: NSColor.labelColor, range: match.range)
         }
     }
 
@@ -312,6 +320,7 @@ class MarkdownTextViewInternal: NSTextView {
 
         for match in matches {
             textStorage.addAttribute(.font, value: boldFont, range: match.range)
+            // Keep the foreground color (labelColor) - don't override
         }
     }
 
@@ -328,6 +337,8 @@ class MarkdownTextViewInternal: NSTextView {
                 size: baseFont.pointSize)
             {
                 textStorage.addAttribute(.font, value: italicFont, range: match.range)
+                textStorage.addAttribute(
+                    .foregroundColor, value: NSColor.labelColor, range: match.range)
             }
         }
     }
