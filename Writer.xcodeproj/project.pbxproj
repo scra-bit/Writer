@@ -11,8 +11,19 @@
 		A08106FF2F788CEE00019350 /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = A08106FE2F788CEE00019350 /* Markdown */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		F51AEA0E4EF5B8AEA2DED1B9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A021E5DE2F785A66008CF299 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A021E5E52F785A66008CF299;
+			remoteInfo = Writer;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		A021E5E62F785A66008CF299 /* Writer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Writer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E8D66C885E30BE0D08339E70 /* WriterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WriterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -26,6 +37,13 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		82A946BF9D4AFCB0C69DE80C /* WriterTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			path = WriterTests;
+			sourceTree = "<group>";
+		};
 		A021E5E82F785A66008CF299 /* Writer */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -37,6 +55,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		6BDE703514FD4A894D6E9AA2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A021E5E32F785A66008CF299 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -54,6 +79,7 @@
 			children = (
 				A021E5E82F785A66008CF299 /* Writer */,
 				A021E5E72F785A66008CF299 /* Products */,
+				82A946BF9D4AFCB0C69DE80C /* WriterTests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -61,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				A021E5E62F785A66008CF299 /* Writer.app */,
+				E8D66C885E30BE0D08339E70 /* WriterTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -68,6 +95,27 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		25E994BBC2092314CB3CC871 /* WriterTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C4890E653C48148EF0111405 /* Build configuration list for PBXNativeTarget "WriterTests" */;
+			buildPhases = (
+				375FE4E43DE730C408EC301B /* Sources */,
+				6BDE703514FD4A894D6E9AA2 /* Frameworks */,
+				C3F82B5C43C9255A609D7808 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				271BEFF9B5A2629D1543C93B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				82A946BF9D4AFCB0C69DE80C /* WriterTests */,
+			);
+			name = WriterTests;
+			productName = WriterTests;
+			productReference = E8D66C885E30BE0D08339E70 /* WriterTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		A021E5E52F785A66008CF299 /* Writer */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A021E5F32F785A67008CF299 /* Build configuration list for PBXNativeTarget "Writer" */;
@@ -126,6 +174,7 @@
 			projectRoot = "";
 			targets = (
 				A021E5E52F785A66008CF299 /* Writer */,
+				25E994BBC2092314CB3CC871 /* WriterTests */,
 			);
 		};
 /* End PBXProject section */
@@ -138,9 +187,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C3F82B5C43C9255A609D7808 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		375FE4E43DE730C408EC301B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A021E5E22F785A66008CF299 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -150,7 +213,64 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		271BEFF9B5A2629D1543C93B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = Writer;
+			target = A021E5E52F785A66008CF299 /* Writer */;
+			targetProxy = F51AEA0E4EF5B8AEA2DED1B9 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		277C41479F5DB46839EDAAE5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = MMB5UM4SUP;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				PRODUCT_BUNDLE_IDENTIFIER = EmmettBuckThompson.WriterTests;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Writer.app/Contents/MacOS/Writer";
+			};
+			name = Debug;
+		};
+		6A67682138909FD0FEAC387A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = MMB5UM4SUP;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				PRODUCT_BUNDLE_IDENTIFIER = EmmettBuckThompson.WriterTests;
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Writer.app/Contents/MacOS/Writer";
+			};
+			name = Release;
+		};
 		A021E5F42F785A67008CF299 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -356,6 +476,15 @@
 			buildConfigurations = (
 				A021E5F42F785A67008CF299 /* Debug */,
 				A021E5F52F785A67008CF299 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C4890E653C48148EF0111405 /* Build configuration list for PBXNativeTarget "WriterTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6A67682138909FD0FEAC387A /* Release */,
+				277C41479F5DB46839EDAAE5 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
