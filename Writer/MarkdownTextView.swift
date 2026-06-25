@@ -11,6 +11,7 @@ struct MarkdownTextView: NSViewRepresentable {
     var fontSize: CGFloat = 16
     var documentURL: URL?
     var workspaceRootURL: URL?
+    var showLineNumbers: Bool = true
 
     func makeNSView(context: Context) -> NSScrollView {
         // Create scroll view manually with custom text view
@@ -45,6 +46,12 @@ struct MarkdownTextView: NSViewRepresentable {
         // Set the text view as the document view
         scrollView.documentView = textView
         scrollView.backgroundColor = NSColor.windowBackgroundColor
+
+        // Line number gutter
+        let ruler = LineNumberRulerView(textView: textView)
+        scrollView.verticalRulerView = ruler
+        scrollView.hasVerticalRuler = true
+        scrollView.rulersVisible = showLineNumbers
 
         // Set initial text
         textView.string = text
@@ -82,6 +89,12 @@ struct MarkdownTextView: NSViewRepresentable {
 
         // Update appearance colors
         updateAppearanceColors(for: textView)
+
+        // Toggle the line number gutter
+        if nsView.rulersVisible != showLineNumbers {
+            nsView.rulersVisible = showLineNumbers
+        }
+        nsView.verticalRulerView?.needsDisplay = true
 
         if needsStyling {
             textView.applyMarkdownStyling()

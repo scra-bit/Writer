@@ -111,6 +111,9 @@ struct WriterApp: App {
         commandPaletteStore.setAction(for: "togglePreview") {
             self.layoutStore.showPreview.toggle()
         }
+        commandPaletteStore.setAction(for: "toggleLineNumbers") {
+            self.layoutStore.showLineNumbers.toggle()
+        }
     }
 
     var body: some Scene {
@@ -221,6 +224,11 @@ struct WriterApp: App {
                     layoutStore.showPreview.toggle()
                 }
                 .keyboardShortcut("/", modifiers: [.command])
+
+                Button(layoutStore.showLineNumbers ? "Hide Line Numbers" : "Show Line Numbers") {
+                    layoutStore.showLineNumbers.toggle()
+                }
+                .keyboardShortcut("l", modifiers: [.command, .shift])
             }
             CommandMenu("Command Palette") {
                 Button("Show Command Palette") {

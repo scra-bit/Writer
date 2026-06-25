@@ -31,6 +31,7 @@ final class CommandPaletteStore {
         Command(id: "refreshFolder", title: "Refresh Folder", keyEquivalent: "", modifiers: [], action: {}),
         Command(id: "save", title: "Save", keyEquivalent: "s", modifiers: .command, action: {}),
         Command(id: "togglePreview", title: "Show/Hide Preview", keyEquivalent: "/", modifiers: .command, action: {}),
+        Command(id: "toggleLineNumbers", title: "Show/Hide Line Numbers", keyEquivalent: "l", modifiers: .command.union(.shift), action: {}),
     ]
 
     var filteredCommands: [Command] {
