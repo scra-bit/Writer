@@ -54,6 +54,14 @@ struct ContentView: View {
             }
 
             ToolbarItem {
+                Button(action: { layoutStore.showLineNumbers.toggle() }) {
+                    Image(systemName: layoutStore.showLineNumbers
+                        ? "list.number" : "list.dash")
+                }
+                .help(layoutStore.showLineNumbers ? "Hide Line Numbers" : "Show Line Numbers")
+            }
+
+            ToolbarItem {
                 Button(action: { editorStore.persistCurrentDocument() }) {
                     Image(systemName: "square.and.arrow.down")
                 }
@@ -145,7 +153,8 @@ struct ContentView: View {
                 MarkdownTextView(
                     text: Bindable(editorStore).documentText,
                     documentURL: editorStore.currentDocumentURL,
-                    workspaceRootURL: editorStore.rootURL
+                    workspaceRootURL: editorStore.rootURL,
+                    showLineNumbers: layoutStore.showLineNumbers
                 )
                 .frame(
                     width: min(800, geometry.size.width * 0.85),
