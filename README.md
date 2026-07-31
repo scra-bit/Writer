@@ -35,3 +35,13 @@ Missing, recursive, malformed, or unsupported content blocks render as warning b
 ## Themes
 Writer has themes. They are well designed.
 
+
+## Zine demo site
+
+The `site/` directory is a working [Zine](https://zine-ssg.io/) site that explains its own structure. It includes SuperMD content, inherited SuperHTML layouts, a generated journal collection, an RSS alternative, responsive styling, and syntax-highlighted code examples.
+
+```sh
+cd site
+zine --host 0.0.0.0 --port 8000  # development server
+zine release                       # static output in site/public/
+```
